@@ -1,0 +1,7 @@
+[package]
+name = "nomenclature"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+nomenclature_derive = { path = "../nomenclature_derive" }
