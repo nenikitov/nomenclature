@@ -1,61 +1,48 @@
 mod impls;
 
-use std::io::{Read, Seek, SeekFrom};
+use std::io::{Cursor, Read, Seek, SeekFrom};
 
 use crate::utils::{endian::Endian, error::BinResult};
 
-pub trait BinReadCombinator<Reader>
+pub trait BinRead<Reader, Args, Out>
 where
+    Self: Sized,
     Reader: Read + Seek,
 {
+    fn read(self, reader: &mut Reader, endian: Endian, args: Args) -> BinResult<Out>;
+}
+
+pub trait BinParser {
+    type Args;
     type Out;
 
-    fn read_non_backtracking(&self, reader: &mut Reader, endian: Endian) -> BinResult<Self::Out>;
+    fn parser<Reader>() -> impl BinRead<Reader, Self::Args, Self::Out>
+    where
+        Reader: Read + Seek;
+}
 
-    #[inline]
-    fn read(&self, reader: &mut Reader, endian: Endian) -> BinResult<Self::Out> {
-        let pos = reader.stream_position()?;
+impl BinParser for u16 {
+    type Args = ();
+    type Out = u16;
 
-        match self.read_non_backtracking(reader, endian) {
-            e if e.is_err() => {
-                reader.seek(SeekFrom::Start(pos))?;
-                e
-            }
-            v => v,
-        }
+    fn parser<Reader>() -> impl BinRead<Reader, Self::Args, Self::Out>
+    where
+        Reader: Read + Seek,
+    {
+        move |r: &mut Reader, e, a| Ok(10)
     }
 }
 
-pub trait BinRead<Reader>
+impl<F, Reader, Args, Out> BinRead<Reader, Args, Out> for F
 where
+    F: Fn(&mut Reader, Endian, Args) -> BinResult<Out>,
     Reader: Read + Seek,
 {
-    type Out;
-
-    fn reader() -> impl BinReadCombinator<Reader, Out = Self::Out>;
-}
-
-impl<Reader> BinRead<Reader> for u16
-where
-    Reader: Read + Seek,
-{
-    type Out = Self;
-
-    fn reader() -> impl BinReadCombinator<Reader, Out = Self::Out> {
-        move |reader: &mut Reader, endian| {
-            Ok(5)
-        }
+    fn read(self, reader: &mut Reader, endian: Endian, args: Args) -> BinResult<Out> {
+        self(reader, endian, args)
     }
 }
 
-impl<T, Reader, Out> BinReadCombinator<Reader> for T
-where
-    Reader: Read + Seek,
-    T: Fn(&mut Reader, Endian) -> BinResult<Out>,
-{
-    type Out = Out;
-
-    fn read_non_backtracking(&self, reader: &mut Reader, endian: Endian) -> BinResult<Self::Out> {
-        self(reader, endian)
-    }
+fn test() {
+    let a = u16::parser().read(&mut Cursor::new(vec![]), Endian::Little, ());
 }
