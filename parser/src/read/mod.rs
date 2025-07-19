@@ -8,7 +8,7 @@ use crate::prelude::*;
 /// Don't worry about it :)
 pub struct BinReadCollectToken(pub(crate) ());
 
-/// This trait allows reading data from streams and constructing an `Out` value, while keeping the state in `self`.
+/// Allows reading data from streams and constructing an `Out` value, while keeping the state in `self`.
 /// Because of this sate, an object implementing [`BinReadCollect`] must be instantiated beforehand.
 ///
 /// It is used for adapters (like `.pad_before`) that can be chained, not be implemented on parseable types like `u8`.
@@ -59,7 +59,7 @@ where
     ) -> BinResult<Out>;
 }
 
-/// This trait is an entry point to parseable types.
+/// Allows parse types, serves an entry point to parseable types.
 ///
 /// You should implement this trait for you parseable types.
 ///
