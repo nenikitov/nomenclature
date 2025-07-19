@@ -1,12 +1,6 @@
 use std::io::{Read, Seek};
 
-use super::sealed;
 use crate::prelude::*;
-
-impl<F, Reader, Args, Out> sealed::BinReadCombinator<Reader, Args, Out> for F where
-    F: FnOnce(&mut Reader, Endian, Args) -> BinResult<Out>
-{
-}
 
 impl<F, Reader, Args, Out> BinReadCollect<Reader, Args, Out> for F
 where
@@ -18,7 +12,7 @@ where
         reader: &mut Reader,
         endian: Endian,
         args: Args,
-        _: BinReadToken,
+        _: BinReadCollectToken,
     ) -> BinResult<Out> {
         self(reader, endian, args)
     }
@@ -27,13 +21,13 @@ where
 macro_rules! impl_binread_primitive {
     ($($type:ty),* $(,)*) => {
         $(
-            impl BinRead for $type {
+            impl $crate::prelude::BinReader for $type {
                 type Args = ();
                 type Out = Self;
 
-                fn read<Reader>() -> impl $crate::prelude::BinReadCollect<Reader, Self::Args, Self::Out>
+                fn reader<Reader>() -> impl $crate::prelude::BinReadCollect<Reader, Self::Args, Self::Out>
                 where
-                    Reader: Read + Seek,
+                    Reader: std::io::Read + std::io::Seek,
                 {
                     move |reader: &mut Reader, endian, _| {
                         let mut buf = [0; size_of::<$type>()];
@@ -59,15 +53,15 @@ impl_binread_primitive!(
 macro_rules! impl_binread_non_zero {
     ($($type:ty),* $(,)*) => {
         $(
-            impl BinRead for std::num::NonZero<$type> {
+            impl $crate::prelude::BinReader for std::num::NonZero<$type> {
                 type Args = ();
                 type Out = Self;
 
-                fn read<Reader>() -> impl $crate::prelude::BinReadCollect<Reader, Self::Args, Self::Out>
+                fn reader<Reader>() -> impl $crate::prelude::BinReadCollect<Reader, Self::Args, Self::Out>
                 where
-                    Reader: Read + Seek,
+                    Reader: std::io::Read + std::io::Seek
                 {
-                    <$type>::read()
+                    <$type>::reader()
                         .assert(
                             |v| *v != 0,
                             |_| "non-zero value expected, but read a 0".to_string(),

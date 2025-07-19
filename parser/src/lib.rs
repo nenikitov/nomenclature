@@ -5,8 +5,8 @@ pub mod write;
 
 pub mod prelude {
     pub use super::{
-        adapters::BinReadAdapter,
-        read::{BinRead, BinReadCollect, BinReadToken},
+        adapters::BinReadExt,
+        read::{BinReadCollect, BinReadCollectToken, BinReader},
         utils::{
             endian::Endian,
             error::{BinError, BinResult},
