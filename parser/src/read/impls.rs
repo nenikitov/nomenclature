@@ -1,4 +1,4 @@
-use std::io::{Read, Seek, SeekFrom};
+use std::io::{Read, Seek};
 
 use super::sealed;
 use crate::prelude::*;
@@ -13,15 +13,14 @@ where
     F: FnOnce(&mut Reader, Endian, Args) -> BinResult<Out>,
     Reader: Read + Seek,
 {
-    fn collect(self, reader: &mut Reader, endian: Endian, args: Args) -> BinResult<Out> {
-        let pos = reader.stream_position()?;
-        match self(reader, endian, args) {
-            Err(e) => {
-                reader.seek(SeekFrom::Start(pos))?;
-                Err(e)
-            }
-            Ok(v) => Ok(v),
-        }
+    fn collect_non_backtracking(
+        self,
+        reader: &mut Reader,
+        endian: Endian,
+        args: Args,
+        _: BinReadToken,
+    ) -> BinResult<Out> {
+        self(reader, endian, args)
     }
 }
 
