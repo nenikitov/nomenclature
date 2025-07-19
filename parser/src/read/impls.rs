@@ -30,7 +30,7 @@ macro_rules! impl_binread_primitive {
         $(
             impl BinRead for $type {
                 type Args = ();
-                type Out = $type;
+                type Out = Self;
 
                 fn read<Reader>() -> impl $crate::prelude::BinReadCollect<Reader, Self::Args, Self::Out>
                 where
@@ -55,4 +55,33 @@ impl_binread_primitive!(
     u8, u16, u32, u64, u128,
     i8, i16, i32, i64, i128,
     f32, f64,
+);
+
+macro_rules! impl_binread_non_zero {
+    ($($type:ty),* $(,)*) => {
+        $(
+            impl BinRead for std::num::NonZero<$type> {
+                type Args = ();
+                type Out = Self;
+
+                fn read<Reader>() -> impl $crate::prelude::BinReadCollect<Reader, Self::Args, Self::Out>
+                where
+                    Reader: Read + Seek,
+                {
+                    <$type>::read()
+                        .assert(
+                            |v| *v != 0,
+                            |_| "non-zero value expected, but read a 0".to_string(),
+                        )
+                        .map(|v| std::num::NonZero::<$type>::new(v).expect("we already checked for a non-zero value"))
+                    }
+                }
+        )*
+    };
+}
+
+#[rustfmt::skip]
+impl_binread_non_zero!(
+    u8, u16, u32, u64, u128,
+    i8, i16, i32, i64, i128,
 );

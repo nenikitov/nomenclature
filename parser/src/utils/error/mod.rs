@@ -2,6 +2,7 @@ use std::io::Error;
 
 #[derive(Debug)]
 pub enum BinError {
+    AssertionFailed { pos: u64, message: String },
     Io(Error),
 }
 
