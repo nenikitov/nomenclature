@@ -19,9 +19,10 @@ jobs:
     strategy:
       matrix:
         toolchain:
-          - stable
-          - beta
           - nightly
+          # TODO(nenikitov): Add these when `--message-format json` gets stabilized
+          # - stable
+          # - beta
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,7 +36,6 @@ jobs:
       - name: cargo fmt
         uses: clechasseur/rs-fmt-check@e1bd0f5c24ced02542ed905bde212ffc9c324863 
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           toolchain: ${{ matrix.toolchain }}
 
   lint:
@@ -61,8 +61,8 @@ jobs:
         uses: clechasseur/rs-clippy-check@23f6dcf86d7e4e0d98b000bba0bb81ac587c44aa
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all-features
           toolchain: ${{ matrix.toolchain }}
+          args: --all-features
 
   doc:
     name: doc
