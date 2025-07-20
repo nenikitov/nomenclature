@@ -129,7 +129,7 @@ where
     ///
     /// # Errors
     ///
-    /// If reading fails, a [`BinError`] variant is returned.
+    /// If reading fails, a [`BinErrorKind`] variant is returned.
     /// The stream is returned to the position before an error.
     ///
     /// # Arguments
@@ -164,13 +164,13 @@ where
         move |reader: &mut Reader, endian, args| {
             let pos = reader.stream_position()?;
             let value = self.collect(reader, endian, args)?;
-            if !assertion(&value) {
-                Err(BinError::AssertionFailed {
+            if assertion(&value) {
+                Ok(value)
+            } else {
+                Err(BinErrorKind::AssertionFailed {
                     pos,
                     message: message(&value),
                 })
-            } else {
-                Ok(value)
             }
         }
     }
@@ -182,7 +182,7 @@ where
     where
         MapFn: Fn(Out) -> Out2,
     {
-        move |reader: &mut Reader, endian, args| self.collect(reader, endian, args).map(|v| map(v))
+        move |reader: &mut Reader, endian, args| self.collect(reader, endian, args).map(&map)
     }
 
     /// Repeat a parser multiple times, collecting it into a [`Vec`].

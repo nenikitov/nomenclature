@@ -23,7 +23,7 @@ where
     ///
     /// # Errors
     ///
-    /// If reading fails, a [`BinError`] variant is returned.
+    /// If reading fails, a [`BinErrorKind`] variant is returned.
     ///
     /// <div class="warning">
     ///

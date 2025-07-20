@@ -1,3 +1,5 @@
+#![warn(clippy::pedantic)]
+
 pub mod adapters;
 pub mod read;
 pub mod utils;
@@ -9,7 +11,7 @@ pub mod prelude {
         read::{BinReadCollect, BinReadCollectToken, BinReader},
         utils::{
             endian::Endian,
-            error::{BinError, BinResult},
+            error::{BinErrorKind, BinResult},
         },
     };
 }
