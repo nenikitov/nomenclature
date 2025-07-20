@@ -81,7 +81,6 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.toolchain }}
-          components: doc
       - name: cargo doc
         run: cargo doc --all-features
 
@@ -103,7 +102,6 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.toolchain }}
-          components: test
       - name: cargo test
         run: cargo test
 
@@ -125,6 +123,5 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.toolchain }}
-          components: build
       - name: cargo build
         run: cargo build
