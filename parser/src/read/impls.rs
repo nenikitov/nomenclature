@@ -4,11 +4,11 @@ use crate::prelude::*;
 
 impl<F, Reader, Args, Out> BinReadCollect<Reader, Args, Out> for F
 where
-    F: FnOnce(&mut Reader, Endian, Args) -> BinResult<Out>,
+    F: FnMut(&mut Reader, Endian, Args) -> BinResult<Out>,
     Reader: Read + Seek,
 {
     fn collect_non_backtracking(
-        self,
+        &mut self,
         reader: &mut Reader,
         endian: Endian,
         args: Args,
@@ -53,22 +53,27 @@ impl_binread_primitive!(
 macro_rules! impl_binread_non_zero {
     ($($type:ty),* $(,)*) => {
         $(
-            impl $crate::prelude::BinReader for std::num::NonZero<$type> {
+            impl crate::prelude::BinReader for std::num::NonZero<$type> {
                 type Args = ();
                 type Out = Self;
-
-                fn reader<Reader>() -> impl $crate::prelude::BinReadCollect<Reader, Self::Args, Self::Out>
+                fn reader<Reader>() -> impl crate::prelude::BinReadCollect<Reader, Self::Args, Self::Out>
                 where
-                    Reader: std::io::Read + std::io::Seek
+                    Reader: std::io::Read + std::io::Seek,
                 {
-                    <$type>::reader()
-                        .assert(
-                            |v| *v != 0,
-                            |_| "non-zero value expected, but read a 0".to_string(),
-                        )
-                        .map(|v| std::num::NonZero::<$type>::new(v).expect("we already checked for a non-zero value"))
+                    move |reader: &mut Reader, endian, args| {
+                        <$type>::reader()
+                            .assert(
+                                |v| *v != 0,
+                                |_| "non-zero value expected, but read a 0".to_string(),
+                            )
+                            .map(|v| {
+                                std::num::NonZero::<$type>::new(v)
+                                    .expect("we already checked for a non-zero value")
+                            })
+                            .collect(reader, endian, args)
                     }
                 }
+            }
         )*
     };
 }
