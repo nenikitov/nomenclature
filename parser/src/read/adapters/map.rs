@@ -23,8 +23,8 @@ impl<'f, F, MapFn, _Out> ReadMap<'f, F, MapFn, _Out> {
     }
 }
 
-impl<'f, F, MapFn, Reader, Args, Out, Out2> BinReadCollect<Reader, Args, Out2>
-    for ReadMap<'f, F, MapFn, Out>
+impl<F, MapFn, Reader, Args, Out, Out2> BinReadCollect<Reader, Args, Out2>
+    for ReadMap<'_, F, MapFn, Out>
 where
     Reader: Read + Seek,
     F: BinReadCollect<Reader, Args, Out>,

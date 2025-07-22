@@ -11,7 +11,6 @@ use crate::prelude::*;
 
 // TODO(nenikitov)
 // Here are the adapters to write
-// - map
 // - mark_metadata
 // - mark_position
 // - mark_size
@@ -29,7 +28,7 @@ use crate::prelude::*;
 ///
 /// # Implementing custom extension methods
 ///
-/// Even though this can be achievend through [`BinReadExt::repeat`], here is an example of a custom adapter.
+// TODO(nenikitov): add this line - Even though this can be achievend through [`BinReadExt::repeat`], here is an example of a custom adapter.
 ///
 /// ## With a callback
 ///
@@ -169,13 +168,13 @@ where
     ///
     /// * `assertion`: Function that should return `true` if the parsed value is valid.
     /// * `message`: Function that should return an error message explaining the validation.
-    fn assert<AssertionFn, MessageFn>(
+    fn assert<AssertFn, MessageFn>(
         &mut self,
-        assertion: AssertionFn,
+        assertion: AssertFn,
         message: MessageFn,
     ) -> impl BinReadCollect<Reader, Args, Out>
     where
-        AssertionFn: Fn(&Out) -> bool,
+        AssertFn: Fn(&Out) -> bool,
         MessageFn: Fn(&Out) -> String,
     {
         assert::ReadAssert::new(self, assertion, message)
@@ -189,20 +188,6 @@ where
         MapFn: Fn(Out) -> Out2,
     {
         map::ReadMap::new(self, map)
-    }
-
-    /// Repeat a parser multiple times, collecting it into a [`Vec`].
-    ///
-    /// * `count`: Number of times to repeat.
-    fn repeat(&mut self, count: usize) -> impl BinReadCollect<Reader, Args, Vec<Out>>
-    where
-        Args: Clone,
-    {
-        move |reader: &mut Reader, endian, args: Args| {
-            (0..count)
-                .map(|_| self.collect(reader, endian, args.clone()))
-                .collect()
-        }
     }
 }
 
@@ -218,4 +203,38 @@ where
     T: BinReadCollect<Reader, Args, Out> + sealed::BinReadExt<Reader, Args, Out>,
     Reader: Read + Seek,
 {
+}
+
+#[cfg(test)]
+mod tests {
+    use std::io::Cursor;
+
+    use assert_matches::*;
+
+    use super::*;
+
+    #[test]
+    fn collect_backtracks_on_error() {
+        let mut data = Cursor::new(vec![0x00, 0x00, 0x00, 0x17, 0x36]);
+        // Some padding to check the position of the error too
+        let _ = u8::reader().collect(&mut data, Endian::Big, ());
+
+        let result = (|reader: &mut Cursor<_>, _, _| -> BinResult<()> {
+            reader.seek_relative(2)?;
+            reader.read_exact(&mut [0; 2])?;
+            Err(BinErrorKind::AssertionFailed {
+                pos: 100,
+                message: "whatever".to_string(),
+            })
+        })
+        .collect(&mut data, Endian::Big, ());
+        assert_matches!(
+            result,
+            Err(BinErrorKind::AssertionFailed {
+                pos: 100,
+                message,
+            }) if message == "whatever"
+        );
+        assert_matches!(data.stream_position(), Ok(1));
+    }
 }

@@ -19,8 +19,8 @@ impl<'f, F, AssertFn, MessageFn> ReadAssert<'f, F, AssertFn, MessageFn> {
     }
 }
 
-impl<'f, F, AssertFn, MessageFn, Reader, Args, Out> BinReadCollect<Reader, Args, Out>
-    for ReadAssert<'f, F, AssertFn, MessageFn>
+impl<F, AssertFn, MessageFn, Reader, Args, Out> BinReadCollect<Reader, Args, Out>
+    for ReadAssert<'_, F, AssertFn, MessageFn>
 where
     Reader: Read + Seek,
     F: BinReadCollect<Reader, Args, Out>,
