@@ -1,4 +1,5 @@
 mod impls;
+pub mod adapters;
 
 use std::io::{Read, Seek};
 
@@ -70,6 +71,7 @@ pub trait BinReader {
     /// You'd usually set it to `()`.
     // TODO(nenikitov): Make this `()` by default when `associated_type_defaults` feature gets stabilized.
     type Args;
+
     /// Output of the parsing.
     ///
     /// You'd usually set it to `Self`.

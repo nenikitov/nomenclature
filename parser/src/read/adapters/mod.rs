@@ -1,3 +1,5 @@
+pub mod assert;
+
 mod sealed {
     pub trait BinReadExt<Reader, Args, Out> {}
 }
@@ -5,6 +7,18 @@ mod sealed {
 use std::io::{Read, Seek, SeekFrom};
 
 use crate::prelude::*;
+
+// TODO(nenikitov)
+// Here are the adapters to write
+// - map
+// - mark_metadata
+// - mark_position
+// - mark_size
+// - pad_after
+// - pad_after_to
+// - pad_before
+// - restore_position
+// - seek_before
 
 /// Allows chaining adapters to create more complex parsers.
 ///
@@ -148,10 +162,10 @@ where
         }
     }
 
-    /// Make an assertion about the value that is read.
+    /// A parser which fails if a specified condition on a parsed value doesn't pass.
     ///
-    /// * `assertion`: Function that should return `true` if the value is valid.
-    /// * `message`: Function that should return an error message explaining the assertion.
+    /// * `assertion`: Function that should return `true` if the parsed value is valid.
+    /// * `message`: Function that should return an error message explaining the validation.
     fn assert<AssertionFn, MessageFn>(
         &mut self,
         assertion: AssertionFn,
@@ -161,17 +175,10 @@ where
         AssertionFn: Fn(&Out) -> bool,
         MessageFn: Fn(&Out) -> String,
     {
-        move |reader: &mut Reader, endian, args| {
-            let pos = reader.stream_position()?;
-            let value = self.collect(reader, endian, args)?;
-            if assertion(&value) {
-                Ok(value)
-            } else {
-                Err(BinErrorKind::AssertionFailed {
-                    pos,
-                    message: message(&value),
-                })
-            }
+        assert::ReadAssert {
+            f: self,
+            assertion,
+            message,
         }
     }
 
