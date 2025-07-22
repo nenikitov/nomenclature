@@ -165,15 +165,25 @@ pub trait BinReader {
     ///
     /// You most likely need to explicitly type hint the reader:
     ///
-    /// ```rust,ignore
-    /// fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
-    /// where
-    ///     Reader: std::io::Read + std::io::Seek,
-    /// {
-    ///     move |reader: &mut Reader, endian, args| {
-    ///        /* Your code here */
-    ///     }
-    /// }
+    /// ```
+    /// # use parser::prelude::*;
+    /// #
+    /// # pub struct MyCustomType();
+    /// #
+    /// # impl BinReader for MyCustomType {
+    /// # type Args = ();
+    /// # type Out = ();
+    /// #
+    ///   fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
+    ///   where
+    ///       Reader: std::io::Read + std::io::Seek,
+    ///   {
+    ///       move |reader: &mut Reader, endian, args| {
+    ///           /* Your code here */
+    /// #         Ok(())
+    ///       }
+    ///   }
+    /// # }
     /// ```
     ///
     /// </div>
