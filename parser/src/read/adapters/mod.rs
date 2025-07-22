@@ -1,6 +1,7 @@
 pub mod assert;
 pub mod map;
 pub mod pad_after;
+pub mod pad_before;
 
 mod sealed {
     pub trait BinReadExt<Reader, Args, Out> {}
@@ -12,9 +13,7 @@ use crate::prelude::*;
 
 // TODO(nenikitov)
 // Here are the adapters to write
-// - pad_after
 // - pad_after_to
-// - pad_before
 // - repeat_array
 // - repeat_vec
 // - restore_position
@@ -196,6 +195,13 @@ where
     /// * `padding`: Number of bytes to pad the value with.
     fn pad_after(&mut self, padding: usize) -> impl BinReadCollect<Reader, Args, Out> {
         pad_after::ReadPadAfter::new(self, padding)
+    }
+
+    /// Skip an amount of bytes before a value.
+    ///
+    /// * `padding`: Number of bytes to pad the value with.
+    fn pad_before(&mut self, padding: usize) -> impl BinReadCollect<Reader, Args, Out> {
+        pad_before::ReadPadBefore::new(self, padding)
     }
 }
 

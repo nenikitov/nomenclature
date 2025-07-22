@@ -18,6 +18,7 @@ pub enum BinErrorKind {
     ///
     /// Can come from:
     /// - [`BinReadExt::pad_after`](crate::prelude::BinReadExt::pad_after)
+    /// - [`BinReadExt::pad_before`](crate::prelude::BinReadExt::pad_before)
     // TODO(nenikitov): Add more seeking functions
     InvalidSeek {
         pos: u64,
