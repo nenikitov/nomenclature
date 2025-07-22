@@ -50,7 +50,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parses() {
+    fn parses_and_maps_value() {
         let mut data = Cursor::new(vec![30]);
 
         let result = u8::reader()
@@ -60,7 +60,7 @@ mod tests {
     }
 
     #[test]
-    fn parses_with_correct_order() {
+    fn parses_and_maps_value_with_correct_order() {
         let mut data = Cursor::new(vec![2]);
 
         let result = u8::reader()

@@ -35,15 +35,16 @@ where
         _: BinReadCollectToken,
     ) -> BinResult<Out> {
         let pos = reader.stream_position()?;
+
         let value = (self.f).collect(reader, endian, args)?;
-        if (self.assertion)(&value) {
-            Ok(value)
-        } else {
-            Err(BinErrorKind::AssertionFailed {
+        if !(self.assertion)(&value) {
+            return Err(BinErrorKind::AssertionFailed {
                 pos,
                 message: (self.message)(&value),
-            })
+            });
         }
+
+        Ok(value)
     }
 }
 
@@ -56,31 +57,31 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parses_if_assertion_returns_true() {
-        let mut data = Cursor::new(vec![0x17, 0x36]);
+    fn parses_value_if_assertion_returns_true() {
+        let mut data = Cursor::new(vec![0x3F, 0xDA]);
 
         let result =
             u16::reader()
                 .assert(|_| true, |_| unreachable!())
                 .collect(&mut data, Endian::Big, ());
-        assert_matches!(result, Ok(0x1736));
+        assert_matches!(result, Ok(0x3FDA));
     }
 
     #[test]
     fn fails_if_assertion_returns_false() {
-        let mut data = Cursor::new(vec![0x00, 0x17, 0x36]);
+        let mut data = Cursor::new(vec![0x00, 0x41, 0xE1]);
         // Some padding to check the position of the error too
         let _ = u8::reader().collect(&mut data, Endian::Big, ());
 
         let result = u16::reader()
-            .assert(|_| false, |v| format!("the value {v:x} is invalid"))
+            .assert(|_| false, |v| format!("the value {v:X} is invalid"))
             .collect(&mut data, Endian::Big, ());
         assert_matches!(
             result,
             Err(BinErrorKind::AssertionFailed {
                 pos: 1,
                 message,
-            }) if message == "the value 1736 is invalid"
+            }) if message == "the value 41E1 is invalid"
         );
     }
 }

@@ -1,5 +1,6 @@
 pub mod assert;
 pub mod map;
+pub mod pad_after;
 
 mod sealed {
     pub trait BinReadExt<Reader, Args, Out> {}
@@ -11,9 +12,6 @@ use crate::prelude::*;
 
 // TODO(nenikitov)
 // Here are the adapters to write
-// - mark_metadata
-// - mark_position
-// - mark_size
 // - pad_after
 // - pad_after_to
 // - pad_before
@@ -189,6 +187,16 @@ where
     {
         map::ReadMap::new(self, map)
     }
+
+    /// Skip an amount of bytes after a value.
+    ///
+    // TODO(nenikitov): But should it fail while reading only?
+    /// Will not fail if the stream has ended during padding.
+    ///
+    /// * `padding`: Number of bytes to pad the value with.
+    fn pad_after(&mut self, padding: usize) -> impl BinReadCollect<Reader, Args, Out> {
+        pad_after::ReadPadAfter::new(self, padding)
+    }
 }
 
 impl<T, Reader, Args, Out> sealed::BinReadExt<Reader, Args, Out> for T
@@ -215,7 +223,7 @@ mod tests {
 
     #[test]
     fn collect_backtracks_on_error() {
-        let mut data = Cursor::new(vec![0x00, 0x00, 0x00, 0x17, 0x36]);
+        let mut data = Cursor::new(vec![0x00, 0x00, 0x00, 0xA3, 0x66]);
         // Some padding to check the position of the error too
         let _ = u8::reader().collect(&mut data, Endian::Big, ());
 

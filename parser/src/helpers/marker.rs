@@ -10,10 +10,20 @@ use crate::prelude::*;
 // TODO(nenikitov): add this line - You can later write to it by using [`BinReaderExt::mark_metadata`], [`BinReaderExt::mark_position`], or [`BinReaderExt::mark_size`].
 #[derive(Debug, Default)]
 pub struct Marker<M> {
+    pos: Cell<u64>,
+    value: M,
+}
+
+impl<M> Marker<M> {
     /// Position of the [`Marker::value`] in the stream.
-    pub pos: Cell<u64>,
+    pub fn pos(&self) -> u64 {
+        self.pos.get()
+    }
+
     /// Underlying value.
-    pub value: M,
+    pub fn value(&self) -> &M {
+        &self.value
+    }
 }
 
 impl<M> BinReader for Marker<M>
@@ -31,6 +41,7 @@ where
         move |reader: &mut Reader, endian, args| {
             let pos = reader.stream_position()?;
             let value = M::reader().collect(reader, endian, args)?;
+
             Ok(Self {
                 pos: Cell::new(pos),
                 value,
@@ -49,20 +60,20 @@ mod tests {
 
     #[test]
     fn stores_value_when_read() {
-        let mut data = Cursor::new(vec![0x17, 0x36]);
+        let mut data = Cursor::new(vec![0xCE, 0x55]);
         let result = <Marker<u16>>::reader().collect(&mut data, Endian::Big, ());
         assert_matches!(
             result,
             Ok(Marker {
                 pos: _,
-                value: 0x1736
+                value: 0xCE55
             })
         );
     }
 
     #[test]
     fn stores_position_when_read() {
-        let mut data = Cursor::new(vec![0x00, 0x00, 0x17, 0x36]);
+        let mut data = Cursor::new(vec![0x00, 0x00, 0xCF, 0x25]);
         // Some padding to check the position of too
         let _ = u16::reader().collect(&mut data, Endian::Big, ());
 
