@@ -3,14 +3,20 @@ use std::io::{Read, Seek};
 use crate::prelude::*;
 
 /// A parser which fails if a specified condition on a parsed value doesn't pass.
-///
-/// * `f`: Inner parser.
-/// * `assertion`: Function that should return `true` if the parsed value is valid.
-/// * `message`: Function that should return an error message explaining the validation.
 pub struct ReadAssert<'f, F, AssertFn, MessageFn> {
-    pub(super) f: &'f mut F,
-    pub(super) assertion: AssertFn,
-    pub(super) message: MessageFn,
+    f: &'f mut F,
+    assertion: AssertFn,
+    message: MessageFn,
+}
+
+impl<'f, F, AssertFn, MessageFn> ReadAssert<'f, F, AssertFn, MessageFn> {
+    pub(super) fn new(f: &'f mut F, assertion: AssertFn, message: MessageFn) -> Self {
+        Self {
+            f,
+            assertion,
+            message,
+        }
+    }
 }
 
 impl<'f, F, AssertFn, MessageFn, Reader, Args, Out> BinReadCollect<Reader, Args, Out>

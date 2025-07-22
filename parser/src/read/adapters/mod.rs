@@ -1,4 +1,5 @@
 pub mod assert;
+pub mod map;
 
 mod sealed {
     pub trait BinReadExt<Reader, Args, Out> {}
@@ -17,6 +18,8 @@ use crate::prelude::*;
 // - pad_after
 // - pad_after_to
 // - pad_before
+// - repeat_array
+// - repeat_vec
 // - restore_position
 // - seek_before
 
@@ -175,11 +178,7 @@ where
         AssertionFn: Fn(&Out) -> bool,
         MessageFn: Fn(&Out) -> String,
     {
-        assert::ReadAssert {
-            f: self,
-            assertion,
-            message,
-        }
+        assert::ReadAssert::new(self, assertion, message)
     }
 
     /// Map a value being read from one type to another.
@@ -189,7 +188,7 @@ where
     where
         MapFn: Fn(Out) -> Out2,
     {
-        move |reader: &mut Reader, endian, args| self.collect(reader, endian, args).map(&map)
+        map::ReadMap::new(self, map)
     }
 
     /// Repeat a parser multiple times, collecting it into a [`Vec`].
