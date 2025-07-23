@@ -26,18 +26,6 @@ where
 
 // BinReader
 
-impl BinReader for () {
-    type Args = ();
-    type Out = Self;
-
-    fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
-    where
-        Reader: Read + Seek,
-    {
-        move |_: &mut Reader, _, _| Ok(())
-    }
-}
-
 impl<T> BinReader for PhantomData<T> {
     type Args = ();
     type Out = Self;
@@ -144,38 +132,39 @@ impl_binread_non_zero!(
     i8, i16, i32, i64, i128,
 );
 
-macro_rules! impl_binread_tuple {
-    // Base case
-    () => {};
-    // Recursive case
-    ($head:ident $(, $tail:ident)* $(,)*) => {
-        impl_binread_tuple!($($tail),*);
+impl BinReader for () {
+    type Args = ();
+    type Out = Self;
 
-        impl_binread_tuple!(impl $head $(, $tail)*);
-    };
-    // Actual implementation
-    (impl $($types:ident),*) => {
-        impl<Args, $($types),*> BinReader for ($($types),* ,)
-        where
-            Args: Clone,
-            $($types: BinReader<Args = Args, Out = $types>),*
-        {
-            type Args = Args;
-            type Out = Self;
-
-            fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
-            where
-                Reader: Read + Seek,
-            {
-                #[allow(non_snake_case)]
-                move |reader: &mut Reader, endian, args: Self::Args| {
-                    $(let $types = <$types>::reader().collect(reader, endian, args.clone())?);* ;
-                    Ok(($($types),* ,))
-                }
-            }
-        }
-    };
+    fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
+    where
+        Reader: Read + Seek,
+    {
+        move |_: &mut Reader, _, _| Ok(())
+    }
 }
 
-impl_binread_tuple!(T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12);
 
+fortuples::fortuples! {
+    #[tuples::min_size(1)]
+    #[tuples::max_size(12)]
+    #[tuples::member_name(T)]
+    impl<Args> BinReader for #Tuple
+    where
+        Args: Clone,
+        #(#T: BinReader<Args = Args, Out = #T>),*
+    {
+        type Args = Args;
+        type Out = Self;
+
+        fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
+        where
+            Reader: Read + Seek,
+        {
+            move |reader: &mut Reader, endian, args: Self::Args| {
+                #(let #T = #T::reader().collect(reader, endian, args.clone())?;)*
+                Ok(#Tuple)
+            }
+        }
+    }
+}
