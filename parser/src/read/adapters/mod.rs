@@ -142,7 +142,8 @@ where
     ///
     /// # Errors
     ///
-    /// If reading fails, a [`BinErrorKind`] variant is returned.
+    /// - [`BinErrorKind`] when reading fails.
+    ///
     /// The stream is returned to the position before an error.
     ///
     /// # Arguments
@@ -163,6 +164,13 @@ where
 
     /// A parser which fails if a specified condition on a parsed value doesn't pass.
     ///
+    /// # Errors
+    ///
+    /// - [`BinErrorKind`] when parsing of the inner value fails.
+    /// - [`BinErrorKind::AssertionFailed`] when `assertion` returns `false`.
+    ///
+    /// # Arguments
+    ///
     /// * `assertion`: Function that should return `true` if the parsed value is valid.
     /// * `message`: Function that should return an error message explaining the validation.
     fn assert<AssertFn, MessageFn>(
@@ -179,6 +187,12 @@ where
 
     /// Map a value being read from one type to another.
     ///
+    /// # Errors
+    ///
+    /// - [`BinErrorKind`] when parsing of the inner value fails.
+    ///
+    /// # Arguments
+    ///
     /// * `map`: Function that is used for conversion.
     fn map<MapFn, Out2>(&mut self, map: MapFn) -> impl BinReadCollect<Reader, Args, Out2>
     where
@@ -192,12 +206,26 @@ where
     // TODO(nenikitov): But should it fail while reading only?
     /// Will not fail if the stream has ended during padding.
     ///
+    /// # Errors
+    ///
+    /// - [`BinErrorKind`] when parsing of the inner value fails.
+    /// - [`BinErrorKind::InvalidSeek`] when `padding` value too large to be skipped by for [`Read`].
+    ///
+    /// # Arguments
+    ///
     /// * `padding`: Number of bytes to pad the value with.
     fn pad_after(&mut self, padding: usize) -> impl BinReadCollect<Reader, Args, Out> {
         pad_after::ReadPadAfter::new(self, padding)
     }
 
     /// Skip an amount of bytes before a value.
+    ///
+    /// # Errors
+    ///
+    /// - [`BinErrorKind`] when parsing of the inner value fails.
+    /// - [`BinErrorKind::InvalidSeek`] when `padding` value too large to be skipped by for [`Read`].
+    ///
+    /// # Arguments
     ///
     /// * `padding`: Number of bytes to pad the value with.
     fn pad_before(&mut self, padding: usize) -> impl BinReadCollect<Reader, Args, Out> {

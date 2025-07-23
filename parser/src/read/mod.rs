@@ -28,7 +28,7 @@ where
     ///
     /// # Errors
     ///
-    /// If reading fails, a [`BinErrorKind`] variant is returned.
+    /// - [`BinErrorKind`] when reading fails.
     ///
     /// <div class="warning">
     ///
@@ -37,13 +37,6 @@ where
     /// Call a [`BinReadExt::collect`] wrapper instead.
     ///
     /// </div>
-    ///
-    /// # Arguments
-    ///
-    /// * `reader`: Stream from which to read.
-    /// * `endian`: Target endianness.
-    /// * `args`: Arguments required for parsing.
-    /// * `_`: Token to prevent calling this function directly.
     ///
     /// # Implementing
     ///
@@ -55,6 +48,13 @@ where
     /// You don't have to write any backtracking on error code yourself, it is handled for you through [`BinReadExt::collect`] wrapper.
     ///
     /// </div>
+    ///
+    /// # Arguments
+    ///
+    /// * `reader`: Stream from which to read.
+    /// * `endian`: Target endianness.
+    /// * `args`: Arguments required for parsing.
+    /// * `_`: Token to prevent calling this function directly.
     fn collect_non_backtracking(
         &mut self,
         reader: &mut Reader,
