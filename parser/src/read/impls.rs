@@ -144,7 +144,6 @@ impl BinReader for () {
     }
 }
 
-
 fortuples::fortuples! {
     #[tuples::min_size(1)]
     #[tuples::max_size(12)]
