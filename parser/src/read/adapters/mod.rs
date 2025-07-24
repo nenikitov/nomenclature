@@ -4,6 +4,7 @@ pub mod pad_after;
 pub mod pad_before;
 pub mod repeat_array;
 pub mod repeat_vec;
+pub mod repeat_vec_args_iter;
 
 mod sealed {
     pub trait BinReadExt<Reader, Args, Out> {}
@@ -244,7 +245,7 @@ where
         repeat_array::ReadRepeatArray::new(self)
     }
 
-    /// Repeat the parser an amount of times, collecting the results into an array.
+    /// Repeat the parser an amount of times, collecting the results into a vector.
     ///
     /// # Errors
     ///
@@ -258,6 +259,21 @@ where
         Args: Clone,
     {
         repeat_vec::ReadRepeatVec::new(self, len)
+    }
+
+    /// Repeat the parser an amount of times, each time applying different arguments, collecting the results into a vector.
+    ///
+    /// Changes arguments to be an iterator outputting the arguments for an inner parser.
+    /// The produced vector will have the same length as this iterator, so it must be finite.
+    ///
+    /// # Errors
+    ///
+    /// - [`BinErrorKind`] when parsing of the inner value fails.
+    fn repeat_vec_args_iter<It>(&mut self) -> impl BinReadCollect<Reader, It, Vec<Out>>
+    where
+        It: IntoIterator<Item = Args>,
+    {
+        repeat_vec_args_iter::ReadRepeatVecArgsIter::new(self)
     }
 }
 
