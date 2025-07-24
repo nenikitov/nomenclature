@@ -31,7 +31,7 @@ use crate::prelude::*;
 ///
 /// ```
 /// use std::io::{Read, Seek, Cursor};
-/// use parser::prelude::*;
+/// use nomenclature::prelude::*;
 ///
 /// // Put all your extension methods in a trait
 /// trait MyExtension<Reader, Args, Out>
@@ -75,7 +75,7 @@ use crate::prelude::*;
 ///
 /// ```
 /// use std::io::{Cursor, Read, Seek};
-/// use parser::prelude::*;
+/// use nomenclature::prelude::*;
 ///
 /// pub struct Collect3<'f, F> {
 ///     f: &'f mut F,

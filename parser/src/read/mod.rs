@@ -78,7 +78,7 @@ where
 ///
 /// ```
 /// use std::{io::Cursor, num::NonZero};
-/// use parser::prelude::*;
+/// use nomenclature::prelude::*;
 ///
 /// // Declare your struct
 /// #[derive(Debug, PartialEq, Eq)]
@@ -166,7 +166,7 @@ pub trait BinReader {
     /// You most likely need to explicitly type hint the reader:
     ///
     /// ```
-    /// # use parser::prelude::*;
+    /// # use nomenclature::prelude::*;
     /// #
     /// # pub struct MyCustomType();
     /// #

@@ -20,7 +20,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "parser"
+name = "nomenclature"
 version = "0.1.0"
 dependencies = [
  "assert_matches",
