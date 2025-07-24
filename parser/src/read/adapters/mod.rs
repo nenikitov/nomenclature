@@ -232,7 +232,7 @@ where
         pad_before::ReadPadBefore::new(self, padding)
     }
 
-    /// Repeat the parser an amount of times, collecting the result into an error.
+    /// Repeat the parser an amount of times, collecting the results into an array.
     ///
     /// # Errors
     ///
