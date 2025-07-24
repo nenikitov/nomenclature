@@ -3,6 +3,7 @@ pub mod map;
 pub mod pad_after;
 pub mod pad_before;
 pub mod repeat_array;
+pub mod repeat_vec;
 
 mod sealed {
     pub trait BinReadExt<Reader, Args, Out> {}
@@ -15,7 +16,6 @@ use crate::prelude::*;
 // TODO(nenikitov)
 // Here are the adapters to write
 // - pad_after_to
-// - repeat_vec
 // - restore_position
 // - seek_before
 
@@ -43,7 +43,7 @@ use crate::prelude::*;
 ///     where
 ///         Args: Clone, // Needed to repeat parsing multiple times
 ///     {
-///         move |reader: &mut Reader, endian: Endian, args: Args| {
+///         |reader: &mut Reader, endian: Endian, args: Args| {
 ///             let first = self.collect(reader, endian, args.clone())?;
 ///             let second = self.collect(reader, endian, args.clone())?;
 ///             let third = self.collect(reader, endian, args.clone())?;
@@ -242,6 +242,22 @@ where
         Args: Clone,
     {
         repeat_array::ReadRepeatArray::new(self)
+    }
+
+    /// Repeat the parser an amount of times, collecting the results into an array.
+    ///
+    /// # Errors
+    ///
+    /// - [`BinErrorKind`] when parsing of the inner value fails.
+    ///
+    /// # Arguments
+    ///
+    /// * `len`: Number of values to parse.
+    fn repeat_vec(&mut self, len: usize) -> impl BinReadCollect<Reader, Args, Vec<Out>>
+    where
+        Args: Clone,
+    {
+        repeat_vec::ReadRepeatVec::new(self, len)
     }
 }
 

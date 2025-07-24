@@ -62,7 +62,7 @@ mod tests {
         let result = u32::reader()
             .pad_after(3)
             .collect(&mut data, Endian::Big, ());
-        assert_matches!(result, Ok(0x524FEE85))
+        assert_matches!(result, Ok(0x524FEE85));
     }
 
     #[test]
@@ -76,7 +76,7 @@ mod tests {
             .pad_after(3)
             .collect(&mut data, Endian::Big, ());
         let result = u16::reader().collect(&mut data, Endian::Big, ());
-        assert_matches!(result, Ok(0x7145))
+        assert_matches!(result, Ok(0x7145));
     }
 
     #[test]
@@ -85,7 +85,7 @@ mod tests {
         let result = u8::reader()
             .pad_after(300)
             .collect(&mut data, Endian::Big, ());
-        assert_matches!(result, Ok(_))
+        assert_matches!(result, Ok(_));
     }
 
     #[test]
@@ -104,6 +104,6 @@ mod tests {
                 kind: SeekKind::Pad,
                 value: 9223372036854775808
             })
-        )
+        );
     }
 }

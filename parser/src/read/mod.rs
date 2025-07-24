@@ -97,7 +97,7 @@ where
 ///     where
 ///         Reader: std::io::Read + std::io::Seek,
 ///     {
-///         move |reader: &mut Reader, endian, args| {
+///         |reader: &mut Reader, endian, args| {
 ///             let a = u32::reader()
 ///                 .map(|v| v + args)
 ///                 .collect(reader, endian, ())?;
@@ -148,7 +148,7 @@ pub trait BinReader {
     /// error[E0282]: type annotations needed
     ///   --> your/file.rs:34:25
     ///    |
-    /// 34 | move |reader, endian, args| {
+    /// 34 | |reader, endian, args| {
     ///    |       ^^^^^^ cannot infer type
     /// ```
     ///
@@ -158,7 +158,7 @@ pub trait BinReader {
     /// error: implementation of `FnOnce` is not general enough
     ///    --> your/file.rs:181:9
     ///     |
-    /// 181 | / move |reader, endian, args| {
+    /// 181 | / |reader, endian, args| {
     /// 182 | | }
     ///     | |_^ implementation of `FnOnce` is not general enough
     /// ```
@@ -178,7 +178,7 @@ pub trait BinReader {
     ///   where
     ///       Reader: std::io::Read + std::io::Seek,
     ///   {
-    ///       move |reader: &mut Reader, endian, args| {
+    ///       |reader: &mut Reader, endian, args| {
     ///           /* Your code here */
     /// #         Ok(())
     ///       }

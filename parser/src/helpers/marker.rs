@@ -38,7 +38,7 @@ where
     where
         Reader: std::io::Read + std::io::Seek,
     {
-        move |reader: &mut Reader, endian, args| {
+        |reader: &mut Reader, endian, args| {
             let pos = reader.stream_position()?;
             let value = M::reader().collect(reader, endian, args)?;
 

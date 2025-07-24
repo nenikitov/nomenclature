@@ -58,7 +58,7 @@ mod tests {
         let result = u8::reader()
             .pad_before(5)
             .collect(&mut data, Endian::Big, ());
-        assert_matches!(result, Ok(0x76))
+        assert_matches!(result, Ok(0x76));
     }
 
     #[test]
@@ -73,7 +73,7 @@ mod tests {
             result,
             Err(BinErrorKind::Io(err))
             if err.kind() == std::io::ErrorKind::UnexpectedEof
-        )
+        );
     }
 
     #[test]
@@ -92,6 +92,6 @@ mod tests {
                 kind: SeekKind::Pad,
                 value: 9223372036854775808
             })
-        )
+        );
     }
 }

@@ -1,22 +1,20 @@
 use std::io::{Read, Seek};
 
-use array_init::try_array_init;
-
 use crate::prelude::*;
 
 /// Repeat the parser an amount of times, collecting the results into an array.
-pub struct ReadRepeatArray<'f, F, const N: usize> {
+pub struct ReadRepeatVec<'f, F> {
     f: &'f mut F,
+    len: usize,
 }
 
-impl<'f, F, const N: usize> ReadRepeatArray<'f, F, N> {
-    pub(super) fn new(f: &'f mut F) -> Self {
-        Self { f }
+impl<'f, F> ReadRepeatVec<'f, F> {
+    pub fn new(f: &'f mut F, len: usize) -> Self {
+        Self { f, len }
     }
 }
 
-impl<F, const N: usize, Reader, Args, Out> BinReadCollect<Reader, Args, [Out; N]>
-    for ReadRepeatArray<'_, F, N>
+impl<F, Reader, Args, Out> BinReadCollect<Reader, Args, Vec<Out>> for ReadRepeatVec<'_, F>
 where
     Reader: Read + Seek,
     F: BinReadCollect<Reader, Args, Out>,
@@ -28,8 +26,10 @@ where
         endian: Endian,
         args: Args,
         _: BinReadCollectToken,
-    ) -> BinResult<[Out; N]> {
-        try_array_init(|_| self.f.collect(reader, endian, args.clone()))
+    ) -> BinResult<Vec<Out>> {
+        (0..self.len)
+            .map(|_| self.f.collect(reader, endian, args.clone()))
+            .collect()
     }
 }
 
@@ -43,12 +43,16 @@ mod tests {
 
     #[test]
     fn parses_values() {
-        let mut data = Cursor::new(vec![0x00, 0x00, 0x9B, 0x0F, 0x74, 0xF3, 0x10, 0xC5]);
+        let mut data = Cursor::new(vec![0x00, 0x00, 0x9F, 0xAF, 0x70, 0x63, 0x86, 0x81, 0xE4]);
         // Some padding to check the position of too
         let _ = u16::reader().collect(&mut data, Endian::Big, ());
-        let result = u16::reader()
-            .repeat_array::<3>()
+        let result = u8::reader()
+            .repeat_vec(7)
             .collect(&mut data, Endian::Big, ());
-        assert_matches!(result, Ok([0x9B0F, 0x74F3, 0x10C5]));
+        assert_matches!(
+            result,
+            Ok(inner)
+            if inner == [0x9F, 0xAF, 0x70, 0x63, 0x86, 0x81, 0xE4]
+        );
     }
 }
