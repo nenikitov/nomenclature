@@ -4,12 +4,12 @@ use crate::{prelude::*, utils::error::SeekKind};
 
 /// Skip an amount of bytes before a value.
 pub struct ReadPadBefore<'f, F> {
-    pub(super) f: &'f mut F,
-    pub(super) padding: usize,
+    f: &'f mut F,
+    padding: usize,
 }
 
 impl<'f, F> ReadPadBefore<'f, F> {
-    pub fn new(f: &'f mut F, padding: usize) -> Self {
+    pub(super) fn new(f: &'f mut F, padding: usize) -> Self {
         Self { f, padding }
     }
 }

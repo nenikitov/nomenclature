@@ -7,10 +7,10 @@ use crate::prelude::*;
 
 /// Map a value being read from one type to another.
 pub struct ReadMap<'f, F, MapFn, _Out> {
-    pub(super) f: &'f mut F,
-    pub(super) map: MapFn,
+    f: &'f mut F,
+    map: MapFn,
     // HACK: I get unconstraint generic types in the `impl` without it
-    pub(super) _out: PhantomData<_Out>,
+    _out: PhantomData<_Out>,
 }
 
 impl<'f, F, MapFn, _Out> ReadMap<'f, F, MapFn, _Out> {

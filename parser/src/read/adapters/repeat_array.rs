@@ -6,11 +6,11 @@ use crate::prelude::*;
 
 /// Repeat the parser an amount of times, collecting the result into an error.
 pub struct ReadRepeatArray<'f, F, const N: usize> {
-    pub(super) f: &'f mut F,
+    f: &'f mut F,
 }
 
 impl<'f, F, const N: usize> ReadRepeatArray<'f, F, N> {
-    pub fn new(f: &'f mut F) -> Self {
+    pub(super) fn new(f: &'f mut F) -> Self {
         Self { f }
     }
 }

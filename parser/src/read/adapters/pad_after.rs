@@ -7,12 +7,12 @@ use crate::{prelude::*, utils::error::SeekKind};
 // TODO(nenikitov): But should it fail while reading only?
 /// Will not fail if the stream has ended during padding.
 pub struct ReadPadAfter<'f, F> {
-    pub(super) f: &'f mut F,
-    pub(super) padding: usize,
+    f: &'f mut F,
+    padding: usize,
 }
 
 impl<'f, F> ReadPadAfter<'f, F> {
-    pub fn new(f: &'f mut F, padding: usize) -> Self {
+    pub(super) fn new(f: &'f mut F, padding: usize) -> Self {
         Self { f, padding }
     }
 }
