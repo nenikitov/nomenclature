@@ -34,7 +34,7 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
           components: rustfmt
       - name: cargo fmt
-        uses: clechasseur/rs-fmt-check@e1bd0f5c24ced02542ed905bde212ffc9c324863 
+        uses: clechasseur/rs-fmt-check@946ff7ba705ba6b0b5101309ab693c96fd452e25 
         with:
           toolchain: ${{ matrix.toolchain }}
 
