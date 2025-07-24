@@ -2,10 +2,7 @@ use std::io::{Read, Seek, SeekFrom};
 
 use crate::{prelude::*, utils::error::SeekKind};
 
-/// Skip an amount of bytes after a value.
-///
-// TODO(nenikitov): But should it fail while reading only?
-/// Will not fail if the stream has ended during padding.
+/// Skip an amount of bytes before a value.
 pub struct ReadPadBefore<'f, F> {
     pub(super) f: &'f mut F,
     pub(super) padding: usize,

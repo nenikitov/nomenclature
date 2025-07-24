@@ -1,4 +1,5 @@
 #![warn(clippy::pedantic)]
+#![allow(clippy::ignored_unit_patterns)]
 
 pub mod helpers;
 pub mod read;

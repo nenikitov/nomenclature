@@ -167,3 +167,23 @@ fortuples::fortuples! {
         }
     }
 }
+
+impl<T, const N: usize> BinReader for [T; N]
+where
+    T: BinReader<Out = T>,
+    T::Args: Clone,
+{
+    type Args = T::Args;
+    type Out = Self;
+
+    fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
+    where
+        Reader: Read + Seek,
+    {
+        move |reader: &mut Reader, endian, args| {
+            T::reader()
+                .repeat_array::<N>()
+                .collect(reader, endian, args)
+        }
+    }
+}

@@ -4,8 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dev-dependencies]
-# TODO(nenikitov): Replace in favor of builtins `std::assert_matches` when `assert_matches` gets stabilized
+# TODO(nenikitov): Replace with builtins `std::assert_matches` when `assert_matches` gets stabilized
 assert_matches = "1.5.0"
 
 [dependencies]
+# TODO(nenikitov): Replace with builtins `std::array::try_from_fn` when `array_try_from_fn` gets stabilized
+array-init = "2.1.0"
 fortuples = "0.9.1"
