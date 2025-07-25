@@ -11,7 +11,7 @@ use crate::prelude::*;
 ///
 /// When writing, [`Marker::pos`] will be populated and [`Default::default`] as a placeholder will be written.
 // TODO(nenikitov): add this line - You can later write to it by using [`BinReaderExt::mark_metadata`], [`BinReaderExt::mark_position`], or [`BinReaderExt::mark_size`].
-#[derive(Debug, Default)]
+#[derive(Debug, Default, PartialEq, Eq)]
 pub struct Marker<M> {
     pos: Cell<u64>,
     value: M,
@@ -42,7 +42,7 @@ where
         Reader: Read + Seek,
     {
         |reader: &mut Reader, endian, args| {
-            let pos = reader.stream_position()?;
+            let pos = reader.bin_stream_position()?;
             let value = M::reader().collect(reader, endian, args)?;
 
             Ok(Self {
@@ -82,12 +82,12 @@ mod tests {
         let _ = u16::reader().collect(&mut data, Endian::Big, ());
 
         let result = <Marker<u16>>::reader().collect(&mut data, Endian::Big, ());
-        assert_matches!(
+        assert_eq!(
             result,
             Ok(Marker {
-                pos,
-                value: _
-            }) if pos == Cell::new(2)
+                pos: Cell::new(2),
+                value: 0xCF25
+            })
         );
     }
 }

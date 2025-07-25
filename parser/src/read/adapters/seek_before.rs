@@ -29,18 +29,18 @@ where
         args: Args,
         _: BinReadCollectToken,
     ) -> BinResult<Out> {
-        let pos = reader.stream_position()?;
-        let position = self
-            .position
-            .try_into()
-            .map_err(|_| BinErrorKind::InvalidSeek {
-                pos,
-                kind: SeekKind::SeekTo,
-                value: self.position,
-            })?;
+        let pos = reader.bin_stream_position()?;
+        let position = self.position.try_into().map_err(|_| {
+            BinError::new(
+                Some(pos),
+                BinErrorKind::Seek {
+                    kind: SeekKind::SeekTo,
+                    value: self.position,
+                },
+            )
+        })?;
 
-        reader.seek(SeekFrom::Start(position))?;
-
+        reader.bin_seek(SeekFrom::Start(position), position)?;
         let value = self.f.collect(reader, endian, args)?;
 
         Ok(value)
@@ -63,7 +63,7 @@ mod tests {
         let result = u8::reader()
             .seek_before(1)
             .collect(&mut data, Endian::Big, ());
-        assert_matches!(result, Ok(0xB9));
+        assert_eq!(result, Ok(0xB9));
     }
 
     #[test]
@@ -76,6 +76,6 @@ mod tests {
             .seek_before(4)
             .collect(&mut data, Endian::Big, ());
         assert_matches!(result, Ok(_));
-        assert_matches!(data.stream_position(), Ok(5));
+        assert_eq!(data.bin_stream_position(), Ok(5));
     }
 }

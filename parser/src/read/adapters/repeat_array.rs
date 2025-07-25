@@ -37,8 +37,6 @@ where
 mod tests {
     use std::io::Cursor;
 
-    use assert_matches::*;
-
     use super::*;
 
     #[test]
@@ -50,6 +48,6 @@ mod tests {
         let result = u16::reader()
             .repeat_array::<3>()
             .collect(&mut data, Endian::Big, ());
-        assert_matches!(result, Ok([0x9B0F, 0x74F3, 0x10C5]));
+        assert_eq!(result, Ok([0x9B0F, 0x74F3, 0x10C5]));
     }
 }

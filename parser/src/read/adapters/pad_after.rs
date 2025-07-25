@@ -29,18 +29,19 @@ where
         args: Args,
         _: BinReadCollectToken,
     ) -> BinResult<Out> {
-        let pos = reader.stream_position()?;
-        let padding = self
-            .padding
-            .try_into()
-            .map_err(|_| BinErrorKind::InvalidSeek {
-                pos,
-                kind: SeekKind::Pad,
-                value: self.padding,
-            })?;
+        let pos = reader.bin_stream_position()?;
+        let padding = self.padding.try_into().map_err(|_| {
+            BinError::new(
+                Some(pos),
+                BinErrorKind::Seek {
+                    kind: SeekKind::Pad,
+                    value: self.padding,
+                },
+            )
+        })?;
 
-        let value = (self.f).collect(reader, endian, args)?;
-        reader.seek(SeekFrom::Current(padding))?;
+        let value = self.f.collect(reader, endian, args)?;
+        reader.bin_seek(SeekFrom::Current(padding), pos + self.padding as u64)?;
 
         Ok(value)
     }
@@ -63,7 +64,7 @@ mod tests {
         let result = u32::reader()
             .pad_after(3)
             .collect(&mut data, Endian::Big, ());
-        assert_matches!(result, Ok(0x524FEE85));
+        assert_eq!(result, Ok(0x524FEE85));
     }
 
     #[test]
@@ -78,7 +79,7 @@ mod tests {
             .pad_after(3)
             .collect(&mut data, Endian::Big, ());
         let result = u16::reader().collect(&mut data, Endian::Big, ());
-        assert_matches!(result, Ok(0x7145));
+        assert_eq!(result, Ok(0x7145));
     }
 
     #[test]
@@ -101,13 +102,15 @@ mod tests {
             // We can only pad by `i64::MAX`
             .pad_after(i64::MAX as usize + 1)
             .collect(&mut data, Endian::Big, ());
-        assert_matches!(
+        assert_eq!(
             result,
-            Err(BinErrorKind::InvalidSeek {
-                pos: 1,
-                kind: SeekKind::Pad,
-                value: 9223372036854775808
-            })
+            Err(BinError::new(
+                Some(1),
+                BinErrorKind::Seek {
+                    kind: SeekKind::Pad,
+                    value: 9223372036854775808,
+                },
+            ))
         );
     }
 }

@@ -78,8 +78,9 @@ macro_rules! impl_binread_numeric {
                     Reader: Read + Seek,
                 {
                     |reader: &mut Reader, endian, _| {
+                        let pos = reader.bin_stream_position()?;
                         let mut buf = [0; size_of::<$type>()];
-                        reader.read_exact(&mut buf)?;
+                        reader.read_exact(&mut buf).map_err(BinError::builder(Some(pos)))?;
                         Ok(match endian {
                             Endian::Big => <$type>::from_be_bytes(buf),
                             Endian::Little => <$type>::from_le_bytes(buf),

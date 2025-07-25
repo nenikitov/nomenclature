@@ -12,7 +12,10 @@ mod sealed {
     pub trait BinReadExt<Reader, Args, Out> {}
 }
 
-use std::io::{Read, Seek, SeekFrom};
+use std::{
+    fmt::Display,
+    io::{Read, Seek, SeekFrom},
+};
 
 use crate::prelude::*;
 
@@ -96,9 +99,9 @@ use crate::prelude::*;
 ///         args: Args,
 ///         _: BinReadCollectToken,
 ///     ) -> BinResult<[Out; 3]> {
-///         let first = (self.f).collect(reader, endian, args.clone())?;
-///         let second = (self.f).collect(reader, endian, args.clone())?;
-///         let third = (self.f).collect(reader, endian, args.clone())?;
+///         let first = self.f.collect(reader, endian, args.clone())?;
+///         let second = self.f.collect(reader, endian, args.clone())?;
+///         let third = self.f.collect(reader, endian, args.clone())?;
 ///         Ok([first, second, third])
 ///     }
 /// }
@@ -154,10 +157,10 @@ where
     /// * `endian`: Target endianness.
     /// * `args`: Arguments required for parsing.
     fn collect(&mut self, reader: &mut Reader, endian: Endian, args: Args) -> BinResult<Out> {
-        let pos = reader.stream_position()?;
+        let pos = reader.bin_stream_position()?;
         match self.collect_non_backtracking(reader, endian, args, BinReadCollectToken(())) {
             Err(e) => {
-                reader.seek(SeekFrom::Start(pos))?;
+                reader.bin_seek(SeekFrom::Start(pos), pos)?;
                 Err(e)
             }
             Ok(v) => Ok(v),
@@ -183,6 +186,7 @@ where
     where
         AssertFn: Fn(&Out) -> bool,
         MessageFn: Fn(&Out) -> String,
+        Out: Display,
     {
         assert::ReadAssert::new(self, assertion, message)
     }
@@ -322,8 +326,6 @@ where
 mod tests {
     use std::io::Cursor;
 
-    use assert_matches::*;
-
     use super::*;
 
     #[test]
@@ -333,21 +335,27 @@ mod tests {
         let _ = u8::reader().collect(&mut data, Endian::Big, ());
 
         let result = (|reader: &mut Cursor<_>, _, _| -> BinResult<()> {
-            reader.seek_relative(2)?;
-            reader.read_exact(&mut [0; 2])?;
-            Err(BinErrorKind::AssertionFailed {
-                pos: 100,
-                message: "whatever".to_string(),
-            })
+            reader.seek(SeekFrom::Current(2)).unwrap();
+            reader.read_exact(&mut [0; 2]).unwrap();
+            Err(BinError::new(
+                Some(100),
+                BinErrorKind::Assertion {
+                    value: "value".to_string(),
+                    message: "whatever".to_string(),
+                },
+            ))
         })
         .collect(&mut data, Endian::Big, ());
-        assert_matches!(
+        assert_eq!(
             result,
-            Err(BinErrorKind::AssertionFailed {
-                pos: 100,
-                message,
-            }) if message == "whatever"
+            Err(BinError::new(
+                Some(100),
+                BinErrorKind::Assertion {
+                    value: "value".to_string(),
+                    message: "whatever".to_string(),
+                }
+            ))
         );
-        assert_matches!(data.stream_position(), Ok(1));
+        assert_eq!(data.bin_stream_position(), Ok(1));
     }
 }

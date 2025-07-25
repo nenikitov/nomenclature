@@ -26,26 +26,25 @@ where
         args: Args,
         _: BinReadCollectToken,
     ) -> BinResult<Out> {
-        let pos = reader.stream_position()?;
-        let padding = self
-            .padding
-            .try_into()
-            .map_err(|_| BinErrorKind::InvalidSeek {
-                pos,
-                kind: SeekKind::Pad,
-                value: self.padding,
-            })?;
+        let pos = reader.bin_stream_position()?;
+        let padding = self.padding.try_into().map_err(|_| {
+            BinError::new(
+                Some(pos),
+                BinErrorKind::Seek {
+                    kind: SeekKind::Pad,
+                    value: self.padding,
+                },
+            )
+        })?;
 
-        reader.seek(SeekFrom::Current(padding))?;
-        (self.f).collect(reader, endian, args)
+        reader.bin_seek(SeekFrom::Current(padding), pos + self.padding as u64)?;
+        self.f.collect(reader, endian, args)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::io::Cursor;
-
-    use assert_matches::*;
+    use std::io::{Cursor, ErrorKind};
 
     use super::*;
 
@@ -59,7 +58,7 @@ mod tests {
         let result = u8::reader()
             .pad_before(5)
             .collect(&mut data, Endian::Big, ());
-        assert_matches!(result, Ok(0x76));
+        assert_eq!(result, Ok(0x76));
     }
 
     #[test]
@@ -71,10 +70,12 @@ mod tests {
         let result = u8::reader()
             .pad_before(10)
             .collect(&mut data, Endian::Big, ());
-        assert_matches!(
+        assert_eq!(
             result,
-            Err(BinErrorKind::Io(err))
-            if err.kind() == std::io::ErrorKind::UnexpectedEof
+            Err(BinError::new(
+                Some(11),
+                BinErrorKind::Io(ErrorKind::UnexpectedEof),
+            ))
         );
     }
 
@@ -88,13 +89,15 @@ mod tests {
             // We can only pad by `i64::MAX`
             .pad_before(i64::MAX as usize + 1)
             .collect(&mut data, Endian::Big, ());
-        assert_matches!(
+        assert_eq!(
             result,
-            Err(BinErrorKind::InvalidSeek {
-                pos: 1,
-                kind: SeekKind::Pad,
-                value: 9223372036854775808
-            })
+            Err(BinError::new(
+                Some(1),
+                BinErrorKind::Seek {
+                    kind: SeekKind::Pad,
+                    value: 9223372036854775808,
+                },
+            ))
         );
     }
 }

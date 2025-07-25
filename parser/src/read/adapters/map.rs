@@ -45,8 +45,6 @@ where
 mod tests {
     use std::io::Cursor;
 
-    use assert_matches::*;
-
     use super::*;
 
     #[test]
@@ -56,7 +54,7 @@ mod tests {
         let result = u8::reader()
             .map(|v| v + 20)
             .collect(&mut data, Endian::Big, ());
-        assert_matches!(result, Ok(50));
+        assert_eq!(result, Ok(50));
     }
 
     #[test]
@@ -67,6 +65,6 @@ mod tests {
             .map(|v| v + 2)
             .map(|v| v * 2)
             .collect(&mut data, Endian::Big, ());
-        assert_matches!(result, Ok(8));
+        assert_eq!(result, Ok(8));
     }
 }

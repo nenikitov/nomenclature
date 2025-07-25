@@ -25,10 +25,10 @@ where
         args: Args,
         _: BinReadCollectToken,
     ) -> BinResult<Out> {
-        let pos = reader.stream_position()?;
+        let pos = reader.bin_stream_position()?;
 
         let value = self.f.collect(reader, endian, args)?;
-        reader.seek(SeekFrom::Start(pos))?;
+        reader.bin_seek(SeekFrom::Start(pos), pos)?;
 
         Ok(value)
     }
@@ -50,7 +50,7 @@ mod tests {
         let result = u8::reader()
             .restore_position()
             .collect(&mut data, Endian::Big, ());
-        assert_matches!(result, Ok(0x73));
+        assert_eq!(result, Ok(0x73));
     }
 
     #[test]
@@ -63,6 +63,6 @@ mod tests {
             .restore_position()
             .collect(&mut data, Endian::Big, ());
         assert_matches!(result, Ok(_));
-        assert_matches!(data.stream_position(), Ok(2));
+        assert_eq!(data.bin_stream_position(), Ok(2));
     }
 }

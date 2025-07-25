@@ -10,12 +10,12 @@ pub mod prelude {
     pub use super::{
         helpers::{
             marker::Marker,
-            null_string::{NullStringAscii, NullStringUtf8},
+            null_string::{NullStringAscii, NullStringUtf8, NullStringUtf16},
         },
         read::{BinReadCollect, BinReadCollectToken, BinReader, adapters::BinReadExt},
         utils::{
             endian::Endian,
-            error::{BinErrorKind, BinResult},
+            error::{BinError, BinErrorKind, BinResult, BinResultSeek},
         },
     };
 }

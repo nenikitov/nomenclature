@@ -1,4 +1,7 @@
-use std::io::{Read, Seek};
+use std::{
+    fmt::Display,
+    io::{Read, Seek},
+};
 
 use crate::prelude::*;
 
@@ -26,6 +29,7 @@ where
     F: BinReadCollect<Reader, Args, Out>,
     AssertFn: Fn(&Out) -> bool,
     MessageFn: Fn(&Out) -> String,
+    Out: Display,
 {
     fn collect_non_backtracking(
         &mut self,
@@ -34,14 +38,17 @@ where
         args: Args,
         _: BinReadCollectToken,
     ) -> BinResult<Out> {
-        let pos = reader.stream_position()?;
+        let pos = reader.bin_stream_position()?;
 
         let value = (self.f).collect(reader, endian, args)?;
         if !(self.assertion)(&value) {
-            return Err(BinErrorKind::AssertionFailed {
-                pos,
-                message: (self.message)(&value),
-            });
+            return Err(BinError::new(
+                Some(pos),
+                BinErrorKind::Assertion {
+                    value: format!("{value}"),
+                    message: (self.message)(&value),
+                },
+            ));
         }
 
         Ok(value)
@@ -51,8 +58,6 @@ where
 #[cfg(test)]
 mod tests {
     use std::io::Cursor;
-
-    use assert_matches::*;
 
     use super::*;
 
@@ -64,7 +69,7 @@ mod tests {
             u16::reader()
                 .assert(|_| true, |_| unreachable!())
                 .collect(&mut data, Endian::Big, ());
-        assert_matches!(result, Ok(0x3FDA));
+        assert_eq!(result, Ok(0x3FDA));
     }
 
     #[test]
@@ -76,12 +81,15 @@ mod tests {
         let result = u16::reader()
             .assert(|_| false, |v| format!("the value {v:X} is invalid"))
             .collect(&mut data, Endian::Big, ());
-        assert_matches!(
+        assert_eq!(
             result,
-            Err(BinErrorKind::AssertionFailed {
-                pos: 1,
-                message,
-            }) if message == "the value 41E1 is invalid"
-        );
+            Err(BinError::new(
+                Some(1,),
+                BinErrorKind::Assertion {
+                    value: "16865".to_string(),
+                    message: "the value 41E1 is invalid".to_string(),
+                },
+            ))
+        )
     }
 }

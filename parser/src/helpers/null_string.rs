@@ -3,6 +3,8 @@ use std::{
     iter,
 };
 
+use widestring::Utf16String;
+
 use crate::prelude::*;
 
 /// A dummy struct that parses null-terminated ASCII strings and converts them to [`String`].
@@ -39,6 +41,8 @@ impl BinReader for NullStringUtf8 {
         Reader: Read + Seek,
     {
         |reader: &mut Reader, endian, args| {
+            let pos = reader.bin_stream_position()?;
+
             let bytes: Vec<_> =
                 iter::from_fn(|| match u8::reader().collect(reader, endian, args) {
                     Ok(0) => None,
@@ -47,7 +51,7 @@ impl BinReader for NullStringUtf8 {
                 })
                 .collect::<BinResult<_>>()?;
 
-            Ok(String::from_utf8(bytes)?)
+            String::from_utf8(bytes).map_err(BinError::builder(Some(pos)))
         }
     }
 }
@@ -64,6 +68,8 @@ impl BinReader for NullStringUtf16 {
         Reader: Read + Seek,
     {
         |reader: &mut Reader, endian, args| {
+            let pos = reader.bin_stream_position()?;
+
             let bytes: Vec<_> =
                 iter::from_fn(|| match u16::reader().collect(reader, endian, args) {
                     Ok(0) => None,
@@ -72,7 +78,9 @@ impl BinReader for NullStringUtf16 {
                 })
                 .collect::<BinResult<_>>()?;
 
-            Ok(String::from_utf16(&bytes)?)
+            Utf16String::from_vec(bytes)
+                .map(|v| v.to_string())
+                .map_err(BinError::builder(Some(pos)))
         }
     }
 }
@@ -97,11 +105,7 @@ mod tests {
             let _ = u16::reader().collect(&mut data, Endian::Big, ());
 
             let result = NullStringAscii::reader().collect(&mut data, Endian::Big, ());
-            assert_matches!(
-                result,
-                Ok(inner)
-                if inner == "20 ÷ 5 = 4"
-            );
+            assert_eq!(result, Ok("20 ÷ 5 = 4".to_string()));
         }
 
         #[test]
@@ -112,7 +116,7 @@ mod tests {
 
             let result = NullStringAscii::reader().collect(&mut data, Endian::Big, ());
             assert_matches!(result, Ok(_));
-            assert_matches!(data.stream_position(), Ok(7));
+            assert_eq!(data.bin_stream_position(), Ok(7));
         }
     }
 
@@ -129,11 +133,7 @@ mod tests {
             let _ = u32::reader().collect(&mut data, Endian::Big, ());
 
             let result = NullStringUtf8::reader().collect(&mut data, Endian::Big, ());
-            assert_matches!(
-                result,
-                Ok(inner)
-                if inner == "20 ÷ 5 = 4"
-            );
+            assert_eq!(result, Ok("20 ÷ 5 = 4".to_string()));
         }
 
         #[test]
@@ -144,7 +144,7 @@ mod tests {
 
             let result = NullStringUtf8::reader().collect(&mut data, Endian::Big, ());
             assert_matches!(result, Ok(_));
-            assert_matches!(data.stream_position(), Ok(8));
+            assert_eq!(data.bin_stream_position(), Ok(8));
         }
     }
 
@@ -161,11 +161,7 @@ mod tests {
             let _ = u32::reader().collect(&mut data, Endian::Big, ());
 
             let result = NullStringUtf16::reader().collect(&mut data, Endian::Big, ());
-            assert_matches!(
-                result,
-                Ok(inner)
-                if inner == "20 ÷ 5 = 4"
-            );
+            assert_eq!(result, Ok("20 ÷ 5 = 4".to_string()));
         }
 
         #[test]
@@ -178,7 +174,7 @@ mod tests {
 
             let result = NullStringUtf16::reader().collect(&mut data, Endian::Big, ());
             assert_matches!(result, Ok(_));
-            assert_matches!(data.stream_position(), Ok(9));
+            assert_eq!(data.bin_stream_position(), Ok(9));
         }
     }
 }
