@@ -14,7 +14,7 @@ mod sealed {
 }
 
 use std::{
-    fmt::Display,
+    fmt::Debug,
     io::{Read, Seek, SeekFrom},
 };
 
@@ -186,7 +186,7 @@ where
     where
         AssertFn: Fn(&Out) -> bool,
         MessageFn: Fn(&Out) -> String,
-        Out: Display,
+        Out: Debug,
     {
         assert::ReadAssert::new(self, assertion, message)
     }

@@ -152,7 +152,7 @@ pub trait BinReader {
     ///   --> your/file.rs:34:25
     ///    |
     /// 34 | |reader, endian, args| {
-    ///    |       ^^^^^^ cannot infer type
+    ///    |  ^^^^^^ cannot infer type
     /// ```
     ///
     /// or

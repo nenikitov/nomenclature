@@ -1,5 +1,5 @@
 use std::{
-    fmt::Display,
+    fmt::Debug,
     io::{Read, Seek},
 };
 
@@ -29,7 +29,7 @@ where
     F: BinReadCollect<Reader, Args, Out>,
     AssertFn: Fn(&Out) -> bool,
     MessageFn: Fn(&Out) -> String,
-    Out: Display,
+    Out: Debug,
 {
     fn collect_non_backtracking(
         &mut self,
@@ -45,7 +45,7 @@ where
             return Err(BinError::new(
                 Some(pos),
                 BinErrorKind::Assertion {
-                    value: format!("{value}"),
+                    value: format!("{value:?}"),
                     message: (self.message)(&value),
                 },
             ));
