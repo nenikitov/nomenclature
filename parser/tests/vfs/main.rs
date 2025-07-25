@@ -4,10 +4,8 @@ use nomenclature::prelude::*;
 
 const DATA: &[u8; 0xB0] = include_bytes!("vfs.bin");
 
-pub struct VfsSubFile;
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct VfsFile {
+#[derive(Debug, PartialEq)]
+struct VfsFile {
     message: String,
     files: Vec<Vec<u8>>,
 }
