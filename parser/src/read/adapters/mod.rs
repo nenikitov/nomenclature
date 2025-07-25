@@ -5,6 +5,7 @@ pub mod pad_before;
 pub mod repeat_array;
 pub mod repeat_vec;
 pub mod repeat_vec_args_iter;
+pub mod restore_position;
 
 mod sealed {
     pub trait BinReadExt<Reader, Args, Out> {}
@@ -17,7 +18,6 @@ use crate::prelude::*;
 // TODO(nenikitov)
 // Here are the adapters to write
 // - pad_after_to
-// - restore_position
 // - seek_before
 
 /// Allows chaining adapters to create more complex parsers.
@@ -274,6 +274,15 @@ where
         It: IntoIterator<Item = Args>,
     {
         repeat_vec_args_iter::ReadRepeatVecArgsIter::new(self)
+    }
+
+    /// Read the value without advancing the stream.
+    ///
+    /// # Errors
+    ///
+    /// - [`BinErrorKind`] when parsing of the inner value fails.
+    fn restore_position(&mut self) -> impl BinReadCollect<Reader, Args, Out> {
+        restore_position::ReadRestorePosition::new(self)
     }
 }
 
