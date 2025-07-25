@@ -42,10 +42,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parses_values() {
+    fn parses() {
         let mut data = Cursor::new(vec![0x00, 0x00, 0x9B, 0x0F, 0x74, 0xF3, 0x10, 0xC5]);
         // Some padding to check the position of too
         let _ = u16::reader().collect(&mut data, Endian::Big, ());
+
         let result = u16::reader()
             .repeat_array::<3>()
             .collect(&mut data, Endian::Big, ());

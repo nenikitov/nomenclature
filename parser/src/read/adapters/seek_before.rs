@@ -56,7 +56,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parses_value() {
+    fn parses() {
         let mut data = Cursor::new(vec![0x00, 0xB9, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
         // Some padding to check the position of too
         let _ = u64::reader().collect(&mut data, Endian::Big, ());
@@ -71,6 +71,7 @@ mod tests {
         let mut data = Cursor::new(vec![0x00, 0x00, 0x00, 0x00, 0x5E, 0x00, 0x00, 0x00]);
         // Some padding to check the position of too
         let _ = u64::reader().collect(&mut data, Endian::Big, ());
+
         let result = u8::reader()
             .seek_before(4)
             .collect(&mut data, Endian::Big, ());

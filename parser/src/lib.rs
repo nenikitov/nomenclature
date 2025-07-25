@@ -8,7 +8,10 @@ pub mod write;
 
 pub mod prelude {
     pub use super::{
-        helpers::marker::Marker,
+        helpers::{
+            marker::Marker,
+            null_string::{NullStringAscii, NullStringUtf8},
+        },
         read::{BinReadCollect, BinReadCollectToken, BinReader, adapters::BinReadExt},
         utils::{
             endian::Endian,

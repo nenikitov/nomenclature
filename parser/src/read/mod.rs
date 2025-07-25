@@ -77,7 +77,10 @@ where
 /// ## Manually
 ///
 /// ```
-/// use std::{io::Cursor, num::NonZero};
+/// use std::{
+///     io::{Cursor, Read, Seek},
+///     num::NonZero,
+/// };
 /// use nomenclature::prelude::*;
 ///
 /// // Declare your struct
@@ -95,7 +98,7 @@ where
 ///
 ///     fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
 ///     where
-///         Reader: std::io::Read + std::io::Seek,
+///         Reader: Read + Seek,
 ///     {
 ///         |reader: &mut Reader, endian, args| {
 ///             let a = u32::reader()
@@ -166,6 +169,7 @@ pub trait BinReader {
     /// You most likely need to explicitly type hint the reader:
     ///
     /// ```
+    /// # use std::io::{Read, Seek};
     /// # use nomenclature::prelude::*;
     /// #
     /// # pub struct MyCustomType();
@@ -176,7 +180,7 @@ pub trait BinReader {
     /// #
     ///   fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
     ///   where
-    ///       Reader: std::io::Read + std::io::Seek,
+    ///       Reader: Read + Seek,
     ///   {
     ///       |reader: &mut Reader, endian, args| {
     ///           /* Your code here */

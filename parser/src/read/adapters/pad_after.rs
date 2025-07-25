@@ -55,10 +55,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parses_value() {
+    fn parses() {
         let mut data = Cursor::new(vec![0x00, 0x52, 0x4F, 0xEE, 0x85, 0x00, 0x00, 0x00]);
         // Some padding to check the position of too
         let _ = u8::reader().collect(&mut data, Endian::Big, ());
+
         let result = u32::reader()
             .pad_after(3)
             .collect(&mut data, Endian::Big, ());
@@ -72,6 +73,7 @@ mod tests {
         ]);
         // Some padding to check the position of too
         let _ = u8::reader().collect(&mut data, Endian::Big, ());
+
         let _ = u32::reader()
             .pad_after(3)
             .collect(&mut data, Endian::Big, ());
@@ -82,6 +84,7 @@ mod tests {
     #[test]
     fn parses_padding_out_of_bounds() {
         let mut data = Cursor::new(vec![0x06]);
+
         let result = u8::reader()
             .pad_after(300)
             .collect(&mut data, Endian::Big, ());
@@ -93,6 +96,7 @@ mod tests {
         let mut data = Cursor::new(vec![0x00, 0x06]);
         // Some padding to check the position of too
         let _ = u8::reader().collect(&mut data, Endian::Big, ());
+
         let result = u8::reader()
             // We can only pad by `i64::MAX`
             .pad_after(i64::MAX as usize + 1)

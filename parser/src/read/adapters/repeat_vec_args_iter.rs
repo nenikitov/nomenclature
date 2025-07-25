@@ -44,12 +44,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parses_values() {
+    fn parses() {
         let mut data = Cursor::new(vec![
             0x00, 0x00, 0x00, 0x00, 0xD5, 0xA0, 0xBA, 0x12, 0x2D, 0x95, 0x1B, 0x79, 0x6C, 0x5B,
         ]);
         // Some padding to check the position of too
         let _ = u32::reader().collect(&mut data, Endian::Big, ());
+
         let mut addition_parser = |reader: &mut Cursor<Vec<u8>>, endian, args: u8| {
             u8::reader().collect(reader, endian, ()).map(|v| v + args)
         };

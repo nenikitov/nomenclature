@@ -1,4 +1,7 @@
-use std::cell::Cell;
+use std::{
+    cell::Cell,
+    io::{Read, Seek},
+};
 
 use crate::prelude::*;
 
@@ -36,7 +39,7 @@ where
 
     fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
     where
-        Reader: std::io::Read + std::io::Seek,
+        Reader: Read + Seek,
     {
         |reader: &mut Reader, endian, args| {
             let pos = reader.stream_position()?;
@@ -61,6 +64,7 @@ mod tests {
     #[test]
     fn stores_value_when_read() {
         let mut data = Cursor::new(vec![0xCE, 0x55]);
+
         let result = <Marker<u16>>::reader().collect(&mut data, Endian::Big, ());
         assert_matches!(
             result,
