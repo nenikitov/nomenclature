@@ -1,4 +1,4 @@
-use std::io::Cursor;
+use std::io::{Cursor, Read, Seek};
 
 use nomenclature::prelude::*;
 
@@ -18,7 +18,7 @@ impl BinReader for VfsFile {
 
     fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
     where
-        Reader: std::io::Read + std::io::Seek,
+        Reader: Read + Seek,
     {
         |reader: &mut Reader, endian, _| {
             let _ = <[u8; 4]>::reader()
