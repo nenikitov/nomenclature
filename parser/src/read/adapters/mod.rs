@@ -6,6 +6,7 @@ pub mod repeat_array;
 pub mod repeat_vec;
 pub mod repeat_vec_args_iter;
 pub mod restore_position;
+pub mod seek_before;
 
 mod sealed {
     pub trait BinReadExt<Reader, Args, Out> {}
@@ -18,7 +19,7 @@ use crate::prelude::*;
 // TODO(nenikitov)
 // Here are the adapters to write
 // - pad_after_to
-// - seek_before
+// - with_args
 
 /// Allows chaining adapters to create more complex parsers.
 ///
@@ -163,7 +164,7 @@ where
         }
     }
 
-    /// A parser which fails if a specified condition on a parsed value doesn't pass.
+    /// Fail if a specified condition on a parsed value doesn't pass.
     ///
     /// # Errors
     ///
@@ -283,6 +284,23 @@ where
     /// - [`BinErrorKind`] when parsing of the inner value fails.
     fn restore_position(&mut self) -> impl BinReadCollect<Reader, Args, Out> {
         restore_position::ReadRestorePosition::new(self)
+    }
+
+    /// Position the stream before reading the value.
+    ///
+    /// If succeeds, the stream is kept in the position right after the parsed value.
+    /// If you need to restore position, use [`BinReadExt::restore_position`].
+    ///
+    /// # Errors
+    ///
+    /// - [`BinErrorKind`] when parsing of the inner value fails.
+    /// - [`BinErrorKind::InvalidSeek`] when `position` value too large to be set to by for [`Read`].
+    ///
+    /// # Arguments
+    ///
+    /// * `position`: Position to which set the stream.
+    fn seek_before(&mut self, position: usize) -> impl BinReadCollect<Reader, Args, Out> {
+        seek_before::ReadSeekBefore::new(self, position)
     }
 }
 

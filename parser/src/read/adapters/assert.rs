@@ -2,7 +2,7 @@ use std::io::{Read, Seek};
 
 use crate::prelude::*;
 
-/// A parser which fails if a specified condition on a parsed value doesn't pass.
+/// Fail if a specified condition on a parsed value doesn't pass.
 pub struct ReadAssert<'f, F, AssertFn, MessageFn> {
     f: &'f mut F,
     assertion: AssertFn,
