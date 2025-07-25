@@ -34,7 +34,7 @@ where
             BinError::new(
                 Some(pos),
                 BinErrorKind::Seek {
-                    kind: SeekKind::SeekTo,
+                    kind: SeekKind::Seek,
                     value: self.position,
                 },
             )

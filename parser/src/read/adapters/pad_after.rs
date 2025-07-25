@@ -69,17 +69,14 @@ mod tests {
 
     #[test]
     fn pads_for_the_next_value() {
-        let mut data = Cursor::new(vec![
-            0x00, 0x52, 0x4F, 0xEE, 0x85, 0x00, 0x00, 0x00, 0x71, 0x45,
-        ]);
+        let mut data = Cursor::new(vec![0x00, 0x52, 0x4F, 0xEE, 0x85, 0x00, 0x00, 0x00]);
         // Some padding to check the position of too
         let _ = u8::reader().collect(&mut data, Endian::Big, ());
 
         let _ = u32::reader()
             .pad_after(3)
             .collect(&mut data, Endian::Big, ());
-        let result = u16::reader().collect(&mut data, Endian::Big, ());
-        assert_eq!(result, Ok(0x7145));
+        assert_eq!(data.bin_stream_position(), Ok(8));
     }
 
     #[test]

@@ -8,7 +8,8 @@ use widestring::error::Utf16Error;
 /// Kind of seeking operation that can be performed.
 #[derive(Debug, PartialEq, Eq)]
 pub enum SeekKind {
-    SeekTo,
+    Seek,
+    Size,
     Pad,
 }
 
@@ -30,10 +31,16 @@ pub enum BinErrorKind {
     ///
     /// Can come from:
     /// - [`BinReadExt::pad_after`](crate::prelude::BinReadExt::pad_after)
+    /// - [`BinReadExt::pad_after_to`](crate::prelude::BinReadExt::pad_after_to)
     /// - [`BinReadExt::pad_before`](crate::prelude::BinReadExt::pad_before)
     /// - [`BinReadExt::seek_before`](crate::prelude::BinReadExt::seek_before)
-    // TODO(nenikitov): Add more seeking functions
     Seek { kind: SeekKind, value: usize },
+
+    /// A value bigger than the size it was expected to be.
+    ///
+    /// Can come from:
+    /// - [`BinReadExt::pad_after_to`](crate::prelude::BinReadExt::pad_after_to)
+    Size { expected: usize, got: usize },
 
     /// An IO error occurred in the stream while reading / writing / seeking the data.
     Io(ErrorKind),

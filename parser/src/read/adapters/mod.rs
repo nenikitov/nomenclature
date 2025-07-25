@@ -1,6 +1,7 @@
 pub mod assert;
 pub mod map;
 pub mod pad_after;
+pub mod pad_after_to;
 pub mod pad_before;
 pub mod repeat_array;
 pub mod repeat_vec;
@@ -21,7 +22,6 @@ use crate::prelude::*;
 
 // TODO(nenikitov)
 // Here are the adapters to write
-// - pad_after_to
 // - with_args
 
 /// Allows chaining adapters to create more complex parsers.
@@ -172,7 +172,7 @@ where
     /// # Errors
     ///
     /// - [`BinErrorKind`] when parsing of the inner value fails.
-    /// - [`BinErrorKind::AssertionFailed`] when `assertion` returns `false`.
+    /// - [`BinErrorKind::Assertion`] when `assertion` returns `false`.
     ///
     /// # Arguments
     ///
@@ -215,7 +215,7 @@ where
     /// # Errors
     ///
     /// - [`BinErrorKind`] when parsing of the inner value fails.
-    /// - [`BinErrorKind::InvalidSeek`] when `padding` value too large to be skipped by for [`Read`].
+    /// - [`BinErrorKind::Seek`] when `padding` value too large to be skipped by for [`Read`].
     ///
     /// # Arguments
     ///
@@ -224,12 +224,30 @@ where
         pad_after::ReadPadAfter::new(self, padding)
     }
 
+    /// Skip some bytes after the value so the stream always advances by a given amount.
+    ///
+    // TODO(nenikitov): But should it fail while reading only?
+    /// Will not fail if the stream has ended during padding.
+    ///
+    /// # Errors
+    ///
+    /// - [`BinErrorKind`] when parsing of the inner value fails.
+    /// - [`BinErrorKind::Seek`] when `size` value too large to be skipped by for [`Read`].
+    /// - [`BinErrorKind::Size`] when the value is larger than the given `size`.
+    ///
+    /// # Arguments
+    ///
+    /// * `size`: Length to which the value must be padded to.
+    fn pad_after_to(&mut self, size: usize) -> impl BinReadCollect<Reader, Args, Out> {
+        pad_after_to::ReadPadAfterTo::new(self, size)
+    }
+
     /// Skip an amount of bytes before a value.
     ///
     /// # Errors
     ///
     /// - [`BinErrorKind`] when parsing of the inner value fails.
-    /// - [`BinErrorKind::InvalidSeek`] when `padding` value too large to be skipped by for [`Read`].
+    /// - [`BinErrorKind::Seek`] when `padding` value too large to be skipped by for [`Read`].
     ///
     /// # Arguments
     ///
@@ -298,7 +316,7 @@ where
     /// # Errors
     ///
     /// - [`BinErrorKind`] when parsing of the inner value fails.
-    /// - [`BinErrorKind::InvalidSeek`] when `position` value too large to be set to by for [`Read`].
+    /// - [`BinErrorKind::Seek`] when `position` value too large to be set to by for [`Read`].
     ///
     /// # Arguments
     ///
