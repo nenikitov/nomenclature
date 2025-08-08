@@ -22,25 +22,25 @@ impl<'f, F, AssertFn, MessageFn> ReadAssert<'f, F, AssertFn, MessageFn> {
     }
 }
 
-impl<F, AssertFn, MessageFn, Reader, Args, Out> BinReadCollect<Reader, Args, Out>
+impl<F, AssertFn, MessageFn, Reader, Args, Out> BinRead<Reader, Args, Out>
     for ReadAssert<'_, F, AssertFn, MessageFn>
 where
     Reader: Read + Seek,
-    F: BinReadCollect<Reader, Args, Out>,
+    F: BinRead<Reader, Args, Out>,
     AssertFn: Fn(&Out) -> bool,
     MessageFn: Fn(&Out) -> String,
     Out: Debug,
 {
-    fn collect_non_backtracking(
+    fn read_non_backtracking(
         &mut self,
         reader: &mut Reader,
         endian: Endian,
         args: Args,
-        _: BinReadCollectToken,
+        _: BinReadToken,
     ) -> BinResult<Out> {
         let pos = reader.bin_stream_position()?;
 
-        let value = (self.f).collect(reader, endian, args)?;
+        let value = self.f.read(reader, endian, args)?;
         if !(self.assertion)(&value) {
             return Err(BinError::new(
                 Some(pos),
@@ -68,7 +68,7 @@ mod tests {
         let result =
             u16::reader()
                 .assert(|_| true, |_| unreachable!())
-                .collect(&mut data, Endian::Big, ());
+                .read(&mut data, Endian::Big, ());
         assert_eq!(result, Ok(0x3FDA));
     }
 
@@ -76,11 +76,11 @@ mod tests {
     fn fails_if_assertion_returns_false() {
         let mut data = Cursor::new(vec![0x00, 0x41, 0xE1]);
         // Some padding to check the position of the error too
-        let _ = u8::reader().collect(&mut data, Endian::Big, ());
+        let _ = u8::reader().read(&mut data, Endian::Big, ());
 
         let result = u16::reader()
             .assert(|_| false, |v| format!("the value {v:X} is invalid"))
-            .collect(&mut data, Endian::Big, ());
+            .read(&mut data, Endian::Big, ());
         assert_eq!(
             result,
             Err(BinError::new(

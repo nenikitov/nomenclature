@@ -37,13 +37,13 @@ where
 
     type Out = Self;
 
-    fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
+    fn reader<Reader>() -> impl BinRead<Reader, Self::Args, Self::Out>
     where
         Reader: Read + Seek,
     {
         |reader: &mut Reader, endian, args| {
             let pos = reader.bin_stream_position()?;
-            let value = M::reader().collect(reader, endian, args)?;
+            let value = M::reader().read(reader, endian, args)?;
 
             Ok(Self {
                 pos: Cell::new(pos),
@@ -65,7 +65,7 @@ mod tests {
     fn stores_value_when_read() {
         let mut data = Cursor::new(vec![0xCE, 0x55]);
 
-        let result = <Marker<u16>>::reader().collect(&mut data, Endian::Big, ());
+        let result = <Marker<u16>>::reader().read(&mut data, Endian::Big, ());
         assert_matches!(
             result,
             Ok(Marker {
@@ -79,9 +79,9 @@ mod tests {
     fn stores_position_when_read() {
         let mut data = Cursor::new(vec![0x00, 0x00, 0xCF, 0x25]);
         // Some padding to check the position of too
-        let _ = u16::reader().collect(&mut data, Endian::Big, ());
+        let _ = u16::reader().read(&mut data, Endian::Big, ());
 
-        let result = <Marker<u16>>::reader().collect(&mut data, Endian::Big, ());
+        let result = <Marker<u16>>::reader().read(&mut data, Endian::Big, ());
         assert_eq!(
             result,
             Ok(Marker {

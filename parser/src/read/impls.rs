@@ -6,19 +6,19 @@ use std::{
 
 use crate::prelude::*;
 
-// BinReadCollect
+// BinRead
 
-impl<F, Reader, Args, Out> BinReadCollect<Reader, Args, Out> for F
+impl<F, Reader, Args, Out> BinRead<Reader, Args, Out> for F
 where
     F: FnMut(&mut Reader, Endian, Args) -> BinResult<Out>,
     Reader: Read + Seek,
 {
-    fn collect_non_backtracking(
+    fn read_non_backtracking(
         &mut self,
         reader: &mut Reader,
         endian: Endian,
         args: Args,
-        _: BinReadCollectToken,
+        _: BinReadToken,
     ) -> BinResult<Out> {
         self(reader, endian, args)
     }
@@ -30,7 +30,7 @@ impl<T> BinReader for PhantomData<T> {
     type Args = ();
     type Out = Self;
 
-    fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
+    fn reader<Reader>() -> impl BinRead<Reader, Self::Args, Self::Out>
     where
         Reader: Read + Seek,
     {
@@ -48,12 +48,12 @@ macro_rules! impl_binread_wrapped {
                 type Args = T::Args;
                 type Out = Self;
 
-                fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
+                fn reader<Reader>() -> impl BinRead<Reader, Self::Args, Self::Out>
                 where
                     Reader: Read + Seek,
                 {
                     |reader: &mut Reader, endian, args| {
-                        T::reader().map(Self::new).collect(reader, endian, args)
+                        T::reader().map(Self::new).read(reader, endian, args)
                     }
                 }
             }
@@ -73,7 +73,7 @@ macro_rules! impl_binread_numeric {
                 type Args = ();
                 type Out = Self;
 
-                fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
+                fn reader<Reader>() -> impl BinRead<Reader, Self::Args, Self::Out>
                 where
                     Reader: Read + Seek,
                 {
@@ -105,7 +105,7 @@ macro_rules! impl_binread_non_zero {
             impl BinReader for NonZero<$type> {
                 type Args = ();
                 type Out = Self;
-                fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
+                fn reader<Reader>() -> impl BinRead<Reader, Self::Args, Self::Out>
                 where
                     Reader: Read + Seek,
                 {
@@ -119,7 +119,7 @@ macro_rules! impl_binread_non_zero {
                                 NonZero::<$type>::new(v)
                                     .expect("we already checked for a non-zero value")
                             })
-                            .collect(reader, endian, args)
+                            .read(reader, endian, args)
                     }
                 }
             }
@@ -137,7 +137,7 @@ impl BinReader for () {
     type Args = ();
     type Out = Self;
 
-    fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
+    fn reader<Reader>() -> impl BinRead<Reader, Self::Args, Self::Out>
     where
         Reader: Read + Seek,
     {
@@ -157,12 +157,12 @@ fortuples::fortuples! {
         type Args = Args;
         type Out = Self;
 
-        fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
+        fn reader<Reader>() -> impl BinRead<Reader, Self::Args, Self::Out>
         where
             Reader: Read + Seek,
         {
             |reader: &mut Reader, endian, args: Self::Args| {
-                #(let #T = #T::reader().collect(reader, endian, args.clone())?;)*
+                #(let #T = #T::reader().read(reader, endian, args.clone())?;)*
                 Ok(#Tuple)
             }
         }
@@ -177,14 +177,12 @@ where
     type Args = T::Args;
     type Out = Self;
 
-    fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
+    fn reader<Reader>() -> impl BinRead<Reader, Self::Args, Self::Out>
     where
         Reader: Read + Seek,
     {
         |reader: &mut Reader, endian, args| {
-            T::reader()
-                .repeat_array::<N>()
-                .collect(reader, endian, args)
+            T::reader().repeat_array::<N>().read(reader, endian, args)
         }
     }
 }
@@ -203,14 +201,14 @@ where
     type Args = VecArgs<T::Args>;
     type Out = Self;
 
-    fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
+    fn reader<Reader>() -> impl BinRead<Reader, Self::Args, Self::Out>
     where
         Reader: Read + Seek,
     {
         |reader: &mut Reader, endian, args: Self::Args| {
             T::reader()
                 .repeat_vec(args.len)
-                .collect(reader, endian, args.inner_args.clone())
+                .read(reader, endian, args.inner_args.clone())
         }
     }
 }

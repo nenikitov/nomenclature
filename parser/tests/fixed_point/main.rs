@@ -13,7 +13,7 @@ impl BinReader for I16F16Vec3 {
     type Args = ();
     type Out = Vec3;
 
-    fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
+    fn reader<Reader>() -> impl BinRead<Reader, Self::Args, Self::Out>
     where
         Reader: Read + Seek,
     {
@@ -22,7 +22,7 @@ impl BinReader for I16F16Vec3 {
                 .map(|v| I16F16::from_bits(v).to_num::<f32>())
                 .repeat_array::<3>()
                 .map(Vec3::from_array)
-                .collect(reader, endian, ())
+                .read(reader, endian, ())
         }
     }
 }
@@ -36,17 +36,15 @@ impl BinReader for Cloud {
     type Args = ();
     type Out = Self;
 
-    fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
+    fn reader<Reader>() -> impl BinRead<Reader, Self::Args, Self::Out>
     where
         Reader: Read + Seek,
     {
         |reader: &mut Reader, endian, _| {
-            let num_points = u32::reader().collect(reader, endian, ())?;
+            let num_points = u32::reader().read(reader, endian, ())?;
 
-            let scale = I16F16Vec3::reader().collect(reader, endian, ())?;
-            let offset = I16F16Vec3::reader()
-                .pad_after(4)
-                .collect(reader, endian, ())?;
+            let scale = I16F16Vec3::reader().read(reader, endian, ())?;
+            let offset = I16F16Vec3::reader().pad_after(4).read(reader, endian, ())?;
 
             let points = u8::reader()
                 .map(|v| v as f32 / u8::MAX as f32)
@@ -54,7 +52,7 @@ impl BinReader for Cloud {
                 .map(Vec3::from_array)
                 .map(|v| (v * scale + offset) / UNITS_PER_METER)
                 .repeat_vec(num_points as usize)
-                .collect(reader, endian, ())?;
+                .read(reader, endian, ())?;
 
             Ok(Self { points })
         }
@@ -64,7 +62,7 @@ impl BinReader for Cloud {
 #[test]
 fn main() {
     let mut data = Cursor::new(DATA);
-    let result = Cloud::reader().collect(&mut data, Endian::Big, ());
+    let result = Cloud::reader().read(&mut data, Endian::Big, ());
 
     assert_eq!(
         result,

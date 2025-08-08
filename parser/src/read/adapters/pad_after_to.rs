@@ -17,17 +17,17 @@ impl<'f, F> ReadPadAfterTo<'f, F> {
     }
 }
 
-impl<F, Reader, Args, Out> BinReadCollect<Reader, Args, Out> for ReadPadAfterTo<'_, F>
+impl<F, Reader, Args, Out> BinRead<Reader, Args, Out> for ReadPadAfterTo<'_, F>
 where
     Reader: Read + Seek,
-    F: BinReadCollect<Reader, Args, Out>,
+    F: BinRead<Reader, Args, Out>,
 {
-    fn collect_non_backtracking(
+    fn read_non_backtracking(
         &mut self,
         reader: &mut Reader,
         endian: Endian,
         args: Args,
-        _: BinReadCollectToken,
+        _: BinReadToken,
     ) -> BinResult<Out> {
         let pos = reader.bin_stream_position()?;
 
@@ -43,7 +43,7 @@ where
             )
         })?;
 
-        let value = self.f.collect(reader, endian, args)?;
+        let value = self.f.read(reader, endian, args)?;
         let pos_after = reader.bin_stream_position()?;
 
         let size = pos_after - pos;
@@ -78,11 +78,11 @@ mod tests {
     fn parses() {
         let mut data = Cursor::new(vec![0x00, 0xEB, 0x73, 0x7B, 0x2A, 0x00, 0x00]);
         // Some padding to check the position of too
-        let _ = u8::reader().collect(&mut data, Endian::Big, ());
+        let _ = u8::reader().read(&mut data, Endian::Big, ());
 
         let result = u32::reader()
             .pad_after_to(6)
-            .collect(&mut data, Endian::Big, ());
+            .read(&mut data, Endian::Big, ());
         assert_eq!(result, Ok(0xEB737B2A));
     }
 
@@ -90,11 +90,11 @@ mod tests {
     fn pads_for_the_next_value() {
         let mut data = Cursor::new(vec![0x00, 0x06, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x00]);
         // Some padding to check the position of too
-        let _ = u8::reader().collect(&mut data, Endian::Big, ());
+        let _ = u8::reader().read(&mut data, Endian::Big, ());
 
         let _ = u16::reader()
             .pad_after_to(7)
-            .collect(&mut data, Endian::Big, ());
+            .read(&mut data, Endian::Big, ());
         assert_eq!(data.bin_stream_position(), Ok(8));
     }
 
@@ -104,7 +104,7 @@ mod tests {
 
         let result = u8::reader()
             .pad_after_to(300)
-            .collect(&mut data, Endian::Big, ());
+            .read(&mut data, Endian::Big, ());
         assert_matches!(result, Ok(_));
     }
 
@@ -112,12 +112,12 @@ mod tests {
     fn fails_if_value_is_too_large() {
         let mut data = Cursor::new(vec![0x00, 0x3E, 0xA2]);
         // Some padding to check the position of too
-        let _ = u8::reader().collect(&mut data, Endian::Big, ());
+        let _ = u8::reader().read(&mut data, Endian::Big, ());
 
         let result = u16::reader()
             // We can only pad to `u64::MAX`
             .pad_after_to(1)
-            .collect(&mut data, Endian::Big, ());
+            .read(&mut data, Endian::Big, ());
         assert_eq!(
             result,
             Err(BinError::new(

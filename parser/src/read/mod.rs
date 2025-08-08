@@ -7,10 +7,10 @@ use crate::prelude::*;
 
 /// Unit struct used to seal methods.
 /// Don't worry about it :)
-pub struct BinReadCollectToken(pub(crate) ());
+pub struct BinReadToken(pub(crate) ());
 
 /// Allows reading data from streams and constructing an `Out` value, while keeping the state in `self`.
-/// Because of this sate, an object implementing [`BinReadCollect`] must be instantiated beforehand.
+/// Because of this sate, an object implementing [`BinRead`] must be instantiated beforehand.
 ///
 /// It is used for adapters (like `.pad_before`) that can be chained, not be implemented on parseable types like `u8`.
 /// If you are making a parseable type, you should implement [`BinReader`] trait instead.
@@ -20,7 +20,7 @@ pub struct BinReadCollectToken(pub(crate) ());
 /// # Implementing custom extension methods
 ///
 /// See [this section](BinReadExt#implementing-custom-extension-methods).
-pub trait BinReadCollect<Reader, Args, Out>
+pub trait BinRead<Reader, Args, Out>
 where
     Reader: Read + Seek,
 {
@@ -34,18 +34,18 @@ where
     ///
     /// The reader is not returned to the position before an error.
     /// Because of that, this function should not be called directly (there is a token argument preventing this).
-    /// Call a [`BinReadExt::collect`] wrapper instead.
+    /// Call a [`BinReadExt::read`] wrapper instead.
     ///
     /// </div>
     ///
     /// # Implementing
     ///
     /// This is the function you should implement to make a new stateful reader.
-    /// Although you implement it, you would call it through a thin wrapper [`BinReadExt::collect`].
+    /// Although you implement it, you would call it through a thin wrapper [`BinReadExt::read`].
     ///
     /// <div class="warning">
     ///
-    /// You don't have to write any backtracking on error code yourself, it is handled for you through [`BinReadExt::collect`] wrapper.
+    /// You don't have to write any backtracking on error code yourself, it is handled for you through [`BinReadExt::read`] wrapper.
     ///
     /// </div>
     ///
@@ -55,12 +55,12 @@ where
     /// * `endian`: Target endianness.
     /// * `args`: Arguments required for parsing.
     /// * `_`: Token to prevent calling this function directly.
-    fn collect_non_backtracking(
+    fn read_non_backtracking(
         &mut self,
         reader: &mut Reader,
         endian: Endian,
         args: Args,
-        _: BinReadCollectToken,
+        _: BinReadToken,
     ) -> BinResult<Out>;
 }
 
@@ -68,7 +68,7 @@ where
 ///
 /// You should implement this trait for you parseable types.
 ///
-/// Think of this one like [`IntoIterator`] (has no internal state, is an entry point to chaining adapters), while [`BinReadCollect`] is like an [`Iterator`].
+/// Think of this one like [`IntoIterator`] (has no internal state, is an entry point to chaining adapters), while [`BinRead`] is like an [`Iterator`].
 ///
 /// # Implementing custom parseable types
 ///
@@ -96,16 +96,16 @@ where
 ///     type Args = u32;
 ///     type Out = Self;
 ///
-///     fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
+///     fn reader<Reader>() -> impl BinRead<Reader, Self::Args, Self::Out>
 ///     where
 ///         Reader: Read + Seek,
 ///     {
 ///         |reader: &mut Reader, endian, args| {
 ///             let a = u32::reader()
 ///                 .map(|v| v + args)
-///                 .collect(reader, endian, ())?;
-///             let b = u8::reader().collect(reader, endian, ())?;
-///             let c = <NonZero<i16>>::reader().collect(reader, endian, ())?;
+///                 .read(reader, endian, ())?;
+///             let b = u8::reader().read(reader, endian, ())?;
+///             let c = <NonZero<i16>>::reader().read(reader, endian, ())?;
 ///             Ok(Self { a, b, c })
 ///         }
 ///     }
@@ -119,7 +119,7 @@ where
 /// ]);
 /// assert_eq!(
 ///     MyCustomType::reader()
-///         .collect(&mut data, Endian::Big, 2)
+///         .read(&mut data, Endian::Big, 2)
 ///         .unwrap(),
 ///     MyCustomType {
 ///         a: 0x17_38,
@@ -141,7 +141,7 @@ pub trait BinReader {
     // TODO(nenikitov): Make this `Self` by default when `associated_type_defaults` feature gets stabilized.
     type Out;
 
-    /// Instantiate a [`BinReadCollect`] that can read a stream and return an object of an `Out` type.
+    /// Instantiate a [`BinRead`] that can read a stream and return an object of an `Out` type.
     ///
     /// <div class="warning">
     ///
@@ -178,7 +178,7 @@ pub trait BinReader {
     /// # type Args = ();
     /// # type Out = ();
     /// #
-    ///   fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
+    ///   fn reader<Reader>() -> impl BinRead<Reader, Self::Args, Self::Out>
     ///   where
     ///       Reader: Read + Seek,
     ///   {
@@ -191,7 +191,7 @@ pub trait BinReader {
     /// ```
     ///
     /// </div>
-    fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
+    fn reader<Reader>() -> impl BinRead<Reader, Self::Args, Self::Out>
     where
         Reader: Read + Seek;
 }

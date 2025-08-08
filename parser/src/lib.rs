@@ -11,9 +11,7 @@ pub mod prelude {
             marker::Marker,
             null_string::{NullStringAscii, NullStringUtf8, NullStringUtf16},
         },
-        read::{
-            BinReadCollect, BinReadCollectToken, BinReader, adapters::BinReadExt, impls::VecArgs,
-        },
+        read::{BinRead, BinReadToken, BinReader, adapters::BinReadExt, impls::VecArgs},
         utils::{
             endian::Endian,
             error::{BinError, BinErrorKind, BinResult, BinResultSeek},

@@ -17,17 +17,17 @@ impl<'f, F> ReadSeekBefore<'f, F> {
     }
 }
 
-impl<F, Reader, Args, Out> BinReadCollect<Reader, Args, Out> for ReadSeekBefore<'_, F>
+impl<F, Reader, Args, Out> BinRead<Reader, Args, Out> for ReadSeekBefore<'_, F>
 where
     Reader: Read + Seek,
-    F: BinReadCollect<Reader, Args, Out>,
+    F: BinRead<Reader, Args, Out>,
 {
-    fn collect_non_backtracking(
+    fn read_non_backtracking(
         &mut self,
         reader: &mut Reader,
         endian: Endian,
         args: Args,
-        _: BinReadCollectToken,
+        _: BinReadToken,
     ) -> BinResult<Out> {
         let pos = reader.bin_stream_position()?;
         let position = self.position.try_into().map_err(|_| {
@@ -41,7 +41,7 @@ where
         })?;
 
         reader.bin_seek(SeekFrom::Start(position), position)?;
-        let value = self.f.collect(reader, endian, args)?;
+        let value = self.f.read(reader, endian, args)?;
 
         Ok(value)
     }
@@ -59,10 +59,8 @@ mod tests {
     fn parses() {
         let mut data = Cursor::new(vec![0x00, 0xB9, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
         // Some padding to check the position of too
-        let _ = u64::reader().collect(&mut data, Endian::Big, ());
-        let result = u8::reader()
-            .seek_before(1)
-            .collect(&mut data, Endian::Big, ());
+        let _ = u64::reader().read(&mut data, Endian::Big, ());
+        let result = u8::reader().seek_before(1).read(&mut data, Endian::Big, ());
         assert_eq!(result, Ok(0xB9));
     }
 
@@ -70,11 +68,9 @@ mod tests {
     fn keeps_stream_position() {
         let mut data = Cursor::new(vec![0x00, 0x00, 0x00, 0x00, 0x5E, 0x00, 0x00, 0x00]);
         // Some padding to check the position of too
-        let _ = u64::reader().collect(&mut data, Endian::Big, ());
+        let _ = u64::reader().read(&mut data, Endian::Big, ());
 
-        let result = u8::reader()
-            .seek_before(4)
-            .collect(&mut data, Endian::Big, ());
+        let result = u8::reader().seek_before(4).read(&mut data, Endian::Big, ());
         assert_matches!(result, Ok(_));
         assert_eq!(data.bin_stream_position(), Ok(5));
     }

@@ -14,12 +14,12 @@ impl BinReader for NullStringAscii {
     type Args = ();
     type Out = String;
 
-    fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
+    fn reader<Reader>() -> impl BinRead<Reader, Self::Args, Self::Out>
     where
         Reader: Read + Seek,
     {
         |reader: &mut Reader, endian, args| {
-            iter::from_fn(|| match u8::reader().collect(reader, endian, args) {
+            iter::from_fn(|| match u8::reader().read(reader, endian, args) {
                 Ok(0) => None,
                 Ok(v) => Some(Ok(v as char)),
                 Err(e) => Some(Err(e)),
@@ -36,20 +36,19 @@ impl BinReader for NullStringUtf8 {
     type Args = ();
     type Out = String;
 
-    fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
+    fn reader<Reader>() -> impl BinRead<Reader, Self::Args, Self::Out>
     where
         Reader: Read + Seek,
     {
         |reader: &mut Reader, endian, args| {
             let pos = reader.bin_stream_position()?;
 
-            let bytes: Vec<_> =
-                iter::from_fn(|| match u8::reader().collect(reader, endian, args) {
-                    Ok(0) => None,
-                    Ok(v) => Some(Ok(v)),
-                    Err(e) => Some(Err(e)),
-                })
-                .collect::<BinResult<_>>()?;
+            let bytes: Vec<_> = iter::from_fn(|| match u8::reader().read(reader, endian, args) {
+                Ok(0) => None,
+                Ok(v) => Some(Ok(v)),
+                Err(e) => Some(Err(e)),
+            })
+            .collect::<BinResult<_>>()?;
 
             String::from_utf8(bytes).map_err(BinError::builder(Some(pos)))
         }
@@ -63,20 +62,19 @@ impl BinReader for NullStringUtf16 {
     type Args = ();
     type Out = String;
 
-    fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
+    fn reader<Reader>() -> impl BinRead<Reader, Self::Args, Self::Out>
     where
         Reader: Read + Seek,
     {
         |reader: &mut Reader, endian, args| {
             let pos = reader.bin_stream_position()?;
 
-            let bytes: Vec<_> =
-                iter::from_fn(|| match u16::reader().collect(reader, endian, args) {
-                    Ok(0) => None,
-                    Ok(v) => Some(Ok(v)),
-                    Err(e) => Some(Err(e)),
-                })
-                .collect::<BinResult<_>>()?;
+            let bytes: Vec<_> = iter::from_fn(|| match u16::reader().read(reader, endian, args) {
+                Ok(0) => None,
+                Ok(v) => Some(Ok(v)),
+                Err(e) => Some(Err(e)),
+            })
+            .collect::<BinResult<_>>()?;
 
             Utf16String::from_vec(bytes)
                 .map(|v| v.to_string())
@@ -102,9 +100,9 @@ mod tests {
                 0x00, 0x00, 0x32, 0x30, 0x20, 0xF7, 0x20, 0x35, 0x20, 0x3D, 0x20, 0x34, 0x00,
             ]);
             // Some padding to check the position of too
-            let _ = u16::reader().collect(&mut data, Endian::Big, ());
+            let _ = u16::reader().read(&mut data, Endian::Big, ());
 
-            let result = NullStringAscii::reader().collect(&mut data, Endian::Big, ());
+            let result = NullStringAscii::reader().read(&mut data, Endian::Big, ());
             assert_eq!(result, Ok("20 ÷ 5 = 4".to_string()));
         }
 
@@ -112,9 +110,9 @@ mod tests {
         fn stops_at_first_null_terminator() {
             let mut data = Cursor::new(vec![0x00, 0x48, 0x65, 0x6C, 0x6C, 0x6F, 0x00, 0x01]);
             // Some padding to check the position of too
-            let _ = u8::reader().collect(&mut data, Endian::Big, ());
+            let _ = u8::reader().read(&mut data, Endian::Big, ());
 
-            let result = NullStringAscii::reader().collect(&mut data, Endian::Big, ());
+            let result = NullStringAscii::reader().read(&mut data, Endian::Big, ());
             assert_matches!(result, Ok(_));
             assert_eq!(data.bin_stream_position(), Ok(7));
         }
@@ -130,9 +128,9 @@ mod tests {
                 0x34, 0x00,
             ]);
             // Some padding to check the position of too
-            let _ = u32::reader().collect(&mut data, Endian::Big, ());
+            let _ = u32::reader().read(&mut data, Endian::Big, ());
 
-            let result = NullStringUtf8::reader().collect(&mut data, Endian::Big, ());
+            let result = NullStringUtf8::reader().read(&mut data, Endian::Big, ());
             assert_eq!(result, Ok("20 ÷ 5 = 4".to_string()));
         }
 
@@ -140,9 +138,9 @@ mod tests {
         fn stops_at_first_null_terminator() {
             let mut data = Cursor::new(vec![0x00, 0x57, 0x6F, 0x72, 0x6C, 0x64, 0x21, 0x00, 0x01]);
             // Some padding to check the position of too
-            let _ = u8::reader().collect(&mut data, Endian::Big, ());
+            let _ = u8::reader().read(&mut data, Endian::Big, ());
 
-            let result = NullStringUtf8::reader().collect(&mut data, Endian::Big, ());
+            let result = NullStringUtf8::reader().read(&mut data, Endian::Big, ());
             assert_matches!(result, Ok(_));
             assert_eq!(data.bin_stream_position(), Ok(8));
         }
@@ -158,9 +156,9 @@ mod tests {
                 0x00, 0x35, 0x00, 0x20, 0x00, 0x3D, 0x00, 0x20, 0x00, 0x34, 0x00, 0x00,
             ]);
             // Some padding to check the position of too
-            let _ = u32::reader().collect(&mut data, Endian::Big, ());
+            let _ = u32::reader().read(&mut data, Endian::Big, ());
 
-            let result = NullStringUtf16::reader().collect(&mut data, Endian::Big, ());
+            let result = NullStringUtf16::reader().read(&mut data, Endian::Big, ());
             assert_eq!(result, Ok("20 ÷ 5 = 4".to_string()));
         }
 
@@ -170,9 +168,9 @@ mod tests {
                 0x00, 0x00, 0x48, 0x00, 0x65, 0x00, 0x79, 0x00, 0x00, 0x01,
             ]);
             // Some padding to check the position of too
-            let _ = u8::reader().collect(&mut data, Endian::Big, ());
+            let _ = u8::reader().read(&mut data, Endian::Big, ());
 
-            let result = NullStringUtf16::reader().collect(&mut data, Endian::Big, ());
+            let result = NullStringUtf16::reader().read(&mut data, Endian::Big, ());
             assert_matches!(result, Ok(_));
             assert_eq!(data.bin_stream_position(), Ok(9));
         }
