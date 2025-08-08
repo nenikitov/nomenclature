@@ -10,10 +10,10 @@ const UNITS_PER_METER: f32 = 32.0;
 struct I16F16Vec3;
 
 impl BinReader for I16F16Vec3 {
-    type Args = ();
+    type Args<'a> = ();
     type Out = Vec3;
 
-    fn reader<Reader>() -> impl BinRead<Reader, Self::Args, Self::Out>
+    fn reader<'a, Reader>() -> impl BinRead<Reader, Self::Args<'a>, Self::Out>
     where
         Reader: Read + Seek,
     {
@@ -33,10 +33,10 @@ struct Cloud {
 }
 
 impl BinReader for Cloud {
-    type Args = ();
+    type Args<'a> = ();
     type Out = Self;
 
-    fn reader<Reader>() -> impl BinRead<Reader, Self::Args, Self::Out>
+    fn reader<'a, Reader>() -> impl BinRead<Reader, Self::Args<'a>, Self::Out>
     where
         Reader: Read + Seek,
     {

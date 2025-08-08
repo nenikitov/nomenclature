@@ -4,7 +4,7 @@ use array_init::try_array_init;
 
 use crate::prelude::*;
 
-/// Repeat the parser an amount of times, reading the results into an array.
+/// Repeat the parser an amount of times, collecting the results into an array.
 pub struct ReadRepeatArray<'f, F, const N: usize> {
     f: &'f mut F,
 }

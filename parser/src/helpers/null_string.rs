@@ -11,10 +11,10 @@ use crate::prelude::*;
 pub struct NullStringAscii;
 
 impl BinReader for NullStringAscii {
-    type Args = ();
+    type Args<'a> = ();
     type Out = String;
 
-    fn reader<Reader>() -> impl BinRead<Reader, Self::Args, Self::Out>
+    fn reader<'a, Reader>() -> impl BinRead<Reader, Self::Args<'a>, Self::Out>
     where
         Reader: Read + Seek,
     {
@@ -33,10 +33,10 @@ impl BinReader for NullStringAscii {
 pub struct NullStringUtf8;
 
 impl BinReader for NullStringUtf8 {
-    type Args = ();
+    type Args<'a> = ();
     type Out = String;
 
-    fn reader<Reader>() -> impl BinRead<Reader, Self::Args, Self::Out>
+    fn reader<'a, Reader>() -> impl BinRead<Reader, Self::Args<'a>, Self::Out>
     where
         Reader: Read + Seek,
     {
@@ -59,10 +59,10 @@ pub struct NullStringUtf16;
 
 /// A dummy struct that parses null-terminated UTF-16 strings and converts them to [`String`].
 impl BinReader for NullStringUtf16 {
-    type Args = ();
+    type Args<'a> = ();
     type Out = String;
 
-    fn reader<Reader>() -> impl BinRead<Reader, Self::Args, Self::Out>
+    fn reader<'a, Reader>() -> impl BinRead<Reader, Self::Args<'a>, Self::Out>
     where
         Reader: Read + Seek,
     {

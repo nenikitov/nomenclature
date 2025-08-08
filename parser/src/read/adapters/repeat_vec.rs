@@ -2,7 +2,7 @@ use std::io::{Read, Seek};
 
 use crate::prelude::*;
 
-/// Repeat the parser an amount of times, reading the results into a vector.
+/// Repeat the parser an amount of times, collecting the results into a vector.
 pub struct ReadRepeatVec<'f, F> {
     f: &'f mut F,
     len: usize,

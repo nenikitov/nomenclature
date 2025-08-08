@@ -2,7 +2,7 @@ use std::io::{Read, Seek};
 
 use crate::prelude::*;
 
-/// Repeat the parser an amount of times, each time applying different arguments, reading the results into a vector.
+/// Repeat the parser an amount of times, each time applying different arguments, collecting the results into a vector.
 ///
 /// Changes arguments to be an iterator outputting the arguments for an inner parser.
 /// The produced vector will have the same length as this iterator, so it must be finite.

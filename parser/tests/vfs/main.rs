@@ -11,10 +11,10 @@ struct VfsFile {
 }
 
 impl BinReader for VfsFile {
-    type Args = ();
+    type Args<'a> = ();
     type Out = Self;
 
-    fn reader<Reader>() -> impl BinRead<Reader, Self::Args, Self::Out>
+    fn reader<'a, Reader>() -> impl BinRead<Reader, Self::Args<'a>, Self::Out>
     where
         Reader: Read + Seek,
     {

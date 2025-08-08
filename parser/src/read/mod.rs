@@ -93,10 +93,10 @@ where
 ///
 /// // Implement the reader
 /// impl BinReader for MyCustomType {
-///     type Args = u32;
+///     type Args<'a> = u32;
 ///     type Out = Self;
 ///
-///     fn reader<Reader>() -> impl BinRead<Reader, Self::Args, Self::Out>
+///     fn reader<'a, Reader>() -> impl BinRead<Reader, Self::Args<'a>, Self::Out>
 ///     where
 ///         Reader: Read + Seek,
 ///     {
@@ -133,7 +133,7 @@ pub trait BinReader {
     ///
     /// You'd usually set it to `()`.
     // TODO(nenikitov): Make this `()` by default when `associated_type_defaults` feature gets stabilized.
-    type Args;
+    type Args<'a>;
 
     /// Output of the parsing.
     ///
@@ -175,10 +175,10 @@ pub trait BinReader {
     /// # pub struct MyCustomType();
     /// #
     /// # impl BinReader for MyCustomType {
-    /// # type Args = ();
+    /// # type Args<'a> = ();
     /// # type Out = ();
     /// #
-    ///   fn reader<Reader>() -> impl BinRead<Reader, Self::Args, Self::Out>
+    ///   fn reader<'a, Reader>() -> impl BinRead<Reader, Self::Args<'a>, Self::Out>
     ///   where
     ///       Reader: Read + Seek,
     ///   {
@@ -191,7 +191,7 @@ pub trait BinReader {
     /// ```
     ///
     /// </div>
-    fn reader<Reader>() -> impl BinRead<Reader, Self::Args, Self::Out>
+    fn reader<'a, Reader>() -> impl BinRead<Reader, Self::Args<'a>, Self::Out>
     where
         Reader: Read + Seek;
 }

@@ -33,11 +33,10 @@ impl<M> BinReader for Marker<M>
 where
     M: BinReader<Out = M>,
 {
-    type Args = M::Args;
-
+    type Args<'a> = M::Args<'a>;
     type Out = Self;
 
-    fn reader<Reader>() -> impl BinRead<Reader, Self::Args, Self::Out>
+    fn reader<'a, Reader>() -> impl BinRead<Reader, Self::Args<'a>, Self::Out>
     where
         Reader: Read + Seek,
     {

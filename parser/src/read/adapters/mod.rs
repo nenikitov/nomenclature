@@ -256,7 +256,7 @@ where
         pad_before::ReadPadBefore::new(self, padding)
     }
 
-    /// Repeat the parser an amount of times, reading the results into an array.
+    /// Repeat the parser an amount of times, collecting the results into an array.
     ///
     /// # Errors
     ///
@@ -268,7 +268,7 @@ where
         repeat_array::ReadRepeatArray::new(self)
     }
 
-    /// Repeat the parser an amount of times, reading the results into a vector.
+    /// Repeat the parser an amount of times, collecting the results into a vector.
     ///
     /// # Errors
     ///
@@ -284,7 +284,7 @@ where
         repeat_vec::ReadRepeatVec::new(self, len)
     }
 
-    /// Repeat the parser an amount of times, each time applying different arguments, reading the results into a vector.
+    /// Repeat the parser an amount of times, each time applying different arguments, collecting the results into a vector.
     ///
     /// Changes arguments to be an iterator outputting the arguments for an inner parser.
     /// The produced vector will have the same length as this iterator, so it must be finite.
