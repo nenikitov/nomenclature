@@ -1,5 +1,5 @@
 pub mod adapters;
-mod impls;
+pub(crate) mod impls;
 
 use std::io::{Read, Seek};
 
