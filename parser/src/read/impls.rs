@@ -43,7 +43,7 @@ impl<T> BinReader for PhantomData<T> {
 macro_rules! impl_binread_wrapped {
     ($($type:ident),* $(,)*) => {
         $(
-            impl<T> BinReader for $type::<T>
+            impl<T> BinReader for $type<T>
             where
                 T: BinReader<Out = T>,
             {
@@ -81,11 +81,11 @@ macro_rules! impl_binread_numeric {
                 {
                     |reader: &mut Reader, endian, _| {
                         let pos = reader.bin_stream_position()?;
-                        let mut buf = [0; size_of::<$type>()];
+                        let mut buf = [0; size_of::<Self>()];
                         reader.read_exact(&mut buf).map_err(BinError::builder(Some(pos)))?;
                         Ok(match endian {
-                            Endian::Big => <$type>::from_be_bytes(buf),
-                            Endian::Little => <$type>::from_le_bytes(buf),
+                            Endian::Big => Self::from_be_bytes(buf),
+                            Endian::Little => Self::from_le_bytes(buf),
                         })
                     }
                 }
@@ -119,8 +119,7 @@ macro_rules! impl_binread_non_zero {
                                 |_| "non-zero value expected, but read a 0".to_string(),
                             )
                             .map(|v| {
-                                NonZero::<$type>::new(v)
-                                    .expect("we already checked for a non-zero value")
+                                Self::new(v).expect("we already checked for a non-zero value")
                             })
                             .read(reader, endian, args)
                     }

@@ -4,6 +4,7 @@
 pub mod helpers;
 pub mod read;
 pub mod utils;
+pub mod write;
 
 pub mod prelude {
     pub use super::{
