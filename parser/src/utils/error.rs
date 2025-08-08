@@ -1,4 +1,5 @@
 use std::{
+    fmt::{self, Display},
     io::{Error, ErrorKind, Seek, SeekFrom},
     string::FromUtf8Error,
 };
@@ -11,6 +12,32 @@ pub enum SeekKind {
     Seek,
     Size,
     Pad,
+}
+
+impl Display for SeekKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Seek => write!(f, "seek"),
+            Self::Size => write!(f, "pad size"),
+            Self::Pad => write!(f, "pad"),
+        }
+    }
+}
+
+/// Kind of seeking operation that can be performed.
+#[derive(Debug, PartialEq, Eq)]
+pub enum StringKind {
+    Utf8,
+    Utf16,
+}
+
+impl Display for StringKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Utf8 => write!(f, "utf-8"),
+            Self::Utf16 => write!(f, "utf-16"),
+        }
+    }
 }
 
 /// Errors that come from binary read / write operations.
@@ -51,9 +78,45 @@ pub enum BinErrorKind {
     /// - [`NullStringUtf8`](crate::prelude::NullStringUtf8)
     /// - [`NullStringUtf16`](crate::prelude::NullStringUtf16)
     StringParsing {
+        kind: StringKind,
         buffer: Vec<usize>,
         valid_up_to: Option<usize>,
     },
+}
+
+impl Display for BinErrorKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Assertion { value, message } => {
+                write!(f, "assertion failed for {value} ({message})")
+            }
+            Self::Seek { kind, value } => write!(f, "cannot {kind} to {value}"),
+            Self::Size { expected, got } => {
+                write!(f, "value of size {got} is larger than {expected}")
+            }
+            Self::Io(error_kind) => write!(f, "{error_kind}"),
+            Self::StringParsing {
+                kind,
+                buffer,
+                valid_up_to,
+            } => {
+                write!(
+                    f,
+                    "invalid buffer {} for {kind} strings",
+                    buffer
+                        .iter()
+                        .map(|v| format!("{v:X?}"))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )?;
+                if let Some(valid_up_to) = valid_up_to {
+                    write!(f, "(valid up to position {valid_up_to})")?;
+                }
+
+                Ok(())
+            }
+        }
+    }
 }
 
 impl From<Error> for BinErrorKind {
@@ -66,6 +129,7 @@ impl From<FromUtf8Error> for BinErrorKind {
     fn from(value: FromUtf8Error) -> Self {
         let valid_up_to = Some(value.utf8_error().valid_up_to());
         Self::StringParsing {
+            kind: StringKind::Utf8,
             buffer: value.into_bytes().iter().map(|v| *v as usize).collect(),
             valid_up_to,
         }
@@ -76,6 +140,7 @@ impl From<Utf16Error> for BinErrorKind {
     fn from(value: Utf16Error) -> Self {
         let valid_up_to = Some(value.index());
         Self::StringParsing {
+            kind: StringKind::Utf16,
             buffer: value
                 .into_vec()
                 .expect("string parsing should always be done from a vector")
@@ -117,6 +182,19 @@ impl BinError {
         move |error| Self::new(pos, error.into())
     }
 }
+
+impl Display for BinError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.kind)?;
+        if let Some(pos) = self.pos {
+            write!(f, "(at {pos})")?;
+        }
+
+        Ok(())
+    }
+}
+
+impl std::error::Error for BinError {}
 
 /// Helper functions around [`Seek`].
 pub trait BinResultSeek

@@ -190,9 +190,9 @@ where
 }
 
 #[derive(Debug, Clone)]
-pub struct VecArgs<Inner> {
+pub struct VecArgs<InnerArgs> {
     pub len: usize,
-    pub inner: Inner,
+    pub inner_args: InnerArgs,
 }
 
 impl<T> BinReader for Vec<T>
@@ -210,7 +210,7 @@ where
         |reader: &mut Reader, endian, args: Self::Args| {
             T::reader()
                 .repeat_vec(args.len)
-                .collect(reader, endian, args.inner.clone())
+                .collect(reader, endian, args.inner_args.clone())
         }
     }
 }
