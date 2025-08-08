@@ -150,7 +150,7 @@ impl BinReader for () {
 
 macro_rules! impl_binread_tuple {
     ($length:literal) => {
-        seq!(I in 1..=$length {
+        seq!(I in 1..$length {
             impl<T0, #(T~I,)*> BinReader for (T0, #(T~I,)*)
             where
                 T0: BinReader<Out = T0>,
@@ -175,7 +175,23 @@ macro_rules! impl_binread_tuple {
     }
 }
 
-seq!(LENGTH in 1..=12 {
+// We don't need `Args` to be `Clone` if the tuple is the length of 1, so the manual implementation is more generic
+impl<T0> BinReader for (T0,)
+where
+    T0: BinReader<Out = T0>,
+{
+    type Args<'a> = T0::Args<'a>;
+    type Out = Self;
+
+    fn reader<'a, Reader>() -> impl BinRead<Reader, Self::Args<'a>, Self::Out>
+    where
+        Reader: Read + Seek,
+    {
+        |reader: &mut Reader, endian, args| T0::reader().map(|x| (x,)).read(reader, endian, args)
+    }
+}
+
+seq!(LENGTH in 2..=12 {
     impl_binread_tuple!(LENGTH);
 });
 
