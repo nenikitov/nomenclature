@@ -2,6 +2,8 @@ use std::{
     io::{Read, Seek},
     marker::PhantomData,
     num::NonZero,
+    rc::Rc,
+    sync::Arc,
 };
 
 use seq_macro::seq;
@@ -40,7 +42,7 @@ impl<T> BinReader for PhantomData<T> {
     }
 }
 
-macro_rules! impl_binread_wrapped {
+macro_rules! impl_bin_read_wrapped {
     ($($type:ident),* $(,)*) => {
         $(
             impl<T> BinReader for $type<T>
@@ -64,11 +66,11 @@ macro_rules! impl_binread_wrapped {
 }
 
 #[rustfmt::skip]
-impl_binread_wrapped!(
-    Box,
+impl_bin_read_wrapped!(
+    Box, Rc, Arc
 );
 
-macro_rules! impl_binread_numeric {
+macro_rules! impl_bin_read_numeric {
     ($($type:ty),* $(,)*) => {
         $(
             impl BinReader for $type {
@@ -95,13 +97,13 @@ macro_rules! impl_binread_numeric {
 }
 
 #[rustfmt::skip]
-impl_binread_numeric!(
+impl_bin_read_numeric!(
     u8, u16, u32, u64, u128,
     i8, i16, i32, i64, i128,
     f32, f64,
 );
 
-macro_rules! impl_binread_non_zero {
+macro_rules! impl_bin_read_non_zero {
     ($($type:ty),* $(,)*) => {
         $(
             impl BinReader for NonZero<$type> {
@@ -130,7 +132,7 @@ macro_rules! impl_binread_non_zero {
 }
 
 #[rustfmt::skip]
-impl_binread_non_zero!(
+impl_bin_read_non_zero!(
     u8, u16, u32, u64, u128,
     i8, i16, i32, i64, i128,
 );
@@ -147,7 +149,7 @@ impl BinReader for () {
     }
 }
 
-macro_rules! impl_binread_tuple {
+macro_rules! impl_bin_read_tuple {
     ($length:literal) => {
         seq!(I in 1..$length {
             impl<T0, #(T~I,)*> BinReader for (T0, #(T~I,)*)
@@ -190,8 +192,9 @@ where
     }
 }
 
+#[rustfmt::skip]
 seq!(LENGTH in 2..=12 {
-    impl_binread_tuple!(LENGTH);
+    impl_bin_read_tuple!(LENGTH);
 });
 
 impl<T, const N: usize> BinReader for [T; N]

@@ -17,5 +17,6 @@ pub mod prelude {
             endian::Endian,
             error::{BinError, BinErrorKind, BinResult, BinResultSeek},
         },
+        write::{BinWrite, BinWriteToken, BinWriter, adapters::BinWriteExt},
     };
 }
