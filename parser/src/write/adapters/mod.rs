@@ -1,5 +1,3 @@
-pub mod assert;
-
 mod sealed {
     pub trait BinWriteExt<Writer, Args> {}
 }
