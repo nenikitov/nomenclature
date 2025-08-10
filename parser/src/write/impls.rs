@@ -98,7 +98,30 @@ impl_bin_write_numeric!(
     f32, f64,
 );
 
-// TODO(nenikitov): Implement for `NonZero` types
+macro_rules! impl_bin_write_non_zero {
+    ($($type:ty),* $(,)*) => {
+        $(
+            impl BinWriter for NonZero<$type> {
+                type Args<'a> = ();
+
+                fn writer<'a, Writer>(&self) -> impl BinWrite<Writer, Self::Args<'a>>
+                where
+                    Writer: Write + Seek,
+                {
+                    |writer: &mut Writer, endian, args| {
+                        self.get().writer().write(writer, endian, args)
+                    }
+                }
+            }
+        )*
+    };
+}
+
+#[rustfmt::skip]
+impl_bin_write_non_zero!(
+    u8, u16, u32, u64, u128,
+    i8, i16, i32, i64, i128,
+);
 
 impl BinWriter for () {
     type Args<'a> = ();

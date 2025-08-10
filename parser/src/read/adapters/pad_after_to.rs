@@ -6,18 +6,18 @@ use crate::{prelude::*, utils::error::SeekKind};
 ///
 // TODO(nenikitov): But should it fail while reading only?
 /// Will not fail if the stream has ended during padding.
-pub struct ReadPadAfterTo<'f, F> {
+pub struct PadAfterTo<'f, F> {
     f: &'f mut F,
     size: usize,
 }
 
-impl<'f, F> ReadPadAfterTo<'f, F> {
+impl<'f, F> PadAfterTo<'f, F> {
     pub(super) fn new(f: &'f mut F, size: usize) -> Self {
         Self { f, size }
     }
 }
 
-impl<F, Reader, Args, Out> BinRead<Reader, Args, Out> for ReadPadAfterTo<'_, F>
+impl<F, Reader, Args, Out> BinRead<Reader, Args, Out> for PadAfterTo<'_, F>
 where
     Reader: Read + Seek,
     F: BinRead<Reader, Args, Out>,

@@ -188,7 +188,7 @@ where
         MessageFn: Fn(&Out) -> String,
         Out: Debug,
     {
-        assert::ReadAssert::new(self, assertion, message)
+        assert::Assert::new(self, assertion, message)
     }
 
     /// Map a value being read from one type to another.
@@ -204,7 +204,7 @@ where
     where
         MapFn: Fn(Out) -> Out2,
     {
-        map::ReadMap::new(self, map)
+        map::Map::new(self, map)
     }
 
     /// Skip an amount of bytes after a value.
@@ -221,7 +221,7 @@ where
     ///
     /// * `padding`: Number of bytes to pad the value with.
     fn pad_after(&mut self, padding: usize) -> impl BinRead<Reader, Args, Out> {
-        pad_after::ReadPadAfter::new(self, padding)
+        pad_after::PadAfter::new(self, padding)
     }
 
     /// Skip some bytes after the value so the stream always advances by a given amount.
@@ -239,7 +239,7 @@ where
     ///
     /// * `size`: Length to which the value must be padded to.
     fn pad_after_to(&mut self, size: usize) -> impl BinRead<Reader, Args, Out> {
-        pad_after_to::ReadPadAfterTo::new(self, size)
+        pad_after_to::PadAfterTo::new(self, size)
     }
 
     /// Skip an amount of bytes before a value.
@@ -253,7 +253,7 @@ where
     ///
     /// * `padding`: Number of bytes to pad the value with.
     fn pad_before(&mut self, padding: usize) -> impl BinRead<Reader, Args, Out> {
-        pad_before::ReadPadBefore::new(self, padding)
+        pad_before::PadBefore::new(self, padding)
     }
 
     /// Repeat the parser an amount of times, collecting the results into an array.
@@ -265,7 +265,7 @@ where
     where
         Args: Clone,
     {
-        repeat_array::ReadRepeatArray::new(self)
+        repeat_array::RepeatArray::new(self)
     }
 
     /// Repeat the parser an amount of times, collecting the results into a vector.
@@ -281,7 +281,7 @@ where
     where
         Args: Clone,
     {
-        repeat_vec::ReadRepeatVec::new(self, len)
+        repeat_vec::RepeatVec::new(self, len)
     }
 
     /// Repeat the parser an amount of times, each time applying different arguments, collecting the results into a vector.
@@ -296,7 +296,7 @@ where
     where
         It: IntoIterator<Item = Args>,
     {
-        repeat_vec_args_iter::ReadRepeatVecArgsIter::new(self)
+        repeat_vec_args_iter::RepeatVecArgsIter::new(self)
     }
 
     /// Read the value without advancing the stream.
@@ -305,7 +305,7 @@ where
     ///
     /// - [`BinErrorKind`] when parsing of the inner value fails.
     fn restore_position(&mut self) -> impl BinRead<Reader, Args, Out> {
-        restore_position::ReadRestorePosition::new(self)
+        restore_position::RestorePosition::new(self)
     }
 
     /// Position the stream before reading the value.
@@ -322,7 +322,7 @@ where
     ///
     /// * `position`: Position to which set the stream.
     fn seek_before(&mut self, position: usize) -> impl BinRead<Reader, Args, Out> {
-        seek_before::ReadSeekBefore::new(self, position)
+        seek_before::SeekBefore::new(self, position)
     }
 }
 

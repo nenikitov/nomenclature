@@ -3,18 +3,18 @@ use std::io::{Read, Seek};
 use crate::prelude::*;
 
 /// Repeat the parser an amount of times, collecting the results into a vector.
-pub struct ReadRepeatVec<'f, F> {
+pub struct RepeatVec<'f, F> {
     f: &'f mut F,
     len: usize,
 }
 
-impl<'f, F> ReadRepeatVec<'f, F> {
+impl<'f, F> RepeatVec<'f, F> {
     pub fn new(f: &'f mut F, len: usize) -> Self {
         Self { f, len }
     }
 }
 
-impl<F, Reader, Args, Out> BinRead<Reader, Args, Vec<Out>> for ReadRepeatVec<'_, F>
+impl<F, Reader, Args, Out> BinRead<Reader, Args, Vec<Out>> for RepeatVec<'_, F>
 where
     Reader: Read + Seek,
     F: BinRead<Reader, Args, Out>,

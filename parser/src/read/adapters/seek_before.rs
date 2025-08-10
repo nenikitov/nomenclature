@@ -6,18 +6,18 @@ use crate::{prelude::*, utils::error::SeekKind};
 ///
 /// If succeeds, the stream is kept in the position right after the parsed value.
 /// If you need to restore position, use [`BinReadExt::restore_position`].
-pub struct ReadSeekBefore<'f, F> {
+pub struct SeekBefore<'f, F> {
     f: &'f mut F,
     position: usize,
 }
 
-impl<'f, F> ReadSeekBefore<'f, F> {
+impl<'f, F> SeekBefore<'f, F> {
     pub(super) fn new(f: &'f mut F, position: usize) -> Self {
         Self { f, position }
     }
 }
 
-impl<F, Reader, Args, Out> BinRead<Reader, Args, Out> for ReadSeekBefore<'_, F>
+impl<F, Reader, Args, Out> BinRead<Reader, Args, Out> for SeekBefore<'_, F>
 where
     Reader: Read + Seek,
     F: BinRead<Reader, Args, Out>,

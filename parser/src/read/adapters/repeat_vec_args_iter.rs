@@ -6,17 +6,17 @@ use crate::prelude::*;
 ///
 /// Changes arguments to be an iterator outputting the arguments for an inner parser.
 /// The produced vector will have the same length as this iterator, so it must be finite.
-pub struct ReadRepeatVecArgsIter<'f, F> {
+pub struct RepeatVecArgsIter<'f, F> {
     f: &'f mut F,
 }
 
-impl<'f, F> ReadRepeatVecArgsIter<'f, F> {
+impl<'f, F> RepeatVecArgsIter<'f, F> {
     pub fn new(f: &'f mut F) -> Self {
         Self { f }
     }
 }
 
-impl<F, Reader, Args, Out, It> BinRead<Reader, It, Vec<Out>> for ReadRepeatVecArgsIter<'_, F>
+impl<F, Reader, Args, Out, It> BinRead<Reader, It, Vec<Out>> for RepeatVecArgsIter<'_, F>
 where
     Reader: Read + Seek,
     F: BinRead<Reader, Args, Out>,

@@ -5,18 +5,18 @@ use array_init::try_array_init;
 use crate::prelude::*;
 
 /// Repeat the parser an amount of times, collecting the results into an array.
-pub struct ReadRepeatArray<'f, F, const N: usize> {
+pub struct RepeatArray<'f, F, const N: usize> {
     f: &'f mut F,
 }
 
-impl<'f, F, const N: usize> ReadRepeatArray<'f, F, N> {
+impl<'f, F, const N: usize> RepeatArray<'f, F, N> {
     pub(super) fn new(f: &'f mut F) -> Self {
         Self { f }
     }
 }
 
 impl<F, const N: usize, Reader, Args, Out> BinRead<Reader, Args, [Out; N]>
-    for ReadRepeatArray<'_, F, N>
+    for RepeatArray<'_, F, N>
 where
     Reader: Read + Seek,
     F: BinRead<Reader, Args, Out>,

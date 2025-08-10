@@ -6,14 +6,14 @@ use std::{
 use crate::prelude::*;
 
 /// Map a value being read from one type to another.
-pub struct ReadMap<'f, F, MapFn, _Out> {
+pub struct Map<'f, F, MapFn, _Out> {
     f: &'f mut F,
     map: MapFn,
     // HACK: I get unconstraint generic types in the `impl` without it
     _out: PhantomData<_Out>,
 }
 
-impl<'f, F, MapFn, _Out> ReadMap<'f, F, MapFn, _Out> {
+impl<'f, F, MapFn, _Out> Map<'f, F, MapFn, _Out> {
     pub(super) fn new(f: &'f mut F, map: MapFn) -> Self {
         Self {
             f,
@@ -23,7 +23,7 @@ impl<'f, F, MapFn, _Out> ReadMap<'f, F, MapFn, _Out> {
     }
 }
 
-impl<F, MapFn, Reader, Args, Out, Out2> BinRead<Reader, Args, Out2> for ReadMap<'_, F, MapFn, Out>
+impl<F, MapFn, Reader, Args, Out, Out2> BinRead<Reader, Args, Out2> for Map<'_, F, MapFn, Out>
 where
     Reader: Read + Seek,
     F: BinRead<Reader, Args, Out>,
