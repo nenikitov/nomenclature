@@ -5,7 +5,6 @@ pub mod helpers;
 pub mod read;
 pub mod utils;
 pub mod write;
-mod write_new;
 
 pub mod prelude {
     pub use super::{
@@ -18,6 +17,9 @@ pub mod prelude {
             endian::Endian,
             error::{BinError, BinErrorKind, BinResult, BinResultSeek},
         },
-        write::{BinWrite, BinWriteToken, BinWriter, adapters::BinWriteExt},
+        write::{
+            BinWrite, BinWriteToken, BinWriter,
+            adapters::{BinWriteExt, BinWriterSelf},
+        },
     };
 }

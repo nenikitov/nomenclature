@@ -2,7 +2,6 @@ use std::{
     io::{Seek, Write},
     marker::PhantomData,
     num::NonZero,
-    ops::Deref,
     rc::Rc,
     sync::Arc,
 };
@@ -13,7 +12,7 @@ use crate::prelude::*;
 
 // BinWrite
 
-impl<F, Writer, Args> BinWrite<Writer, Args> for F
+impl<F, Writer, Args, In> BinWrite<Writer, Args, In> for (&In, F)
 where
     F: FnMut(&mut Writer, Endian, Args) -> BinResult<()>,
     Writer: Write + Seek,
@@ -25,7 +24,11 @@ where
         args: Args,
         _: BinWriteToken,
     ) -> BinResult<()> {
-        self(writer, endian, args)
+        self.1(writer, endian, args)
+    }
+
+    fn inner(&self) -> &In {
+        self.0
     }
 }
 
@@ -33,12 +36,13 @@ where
 
 impl<T> BinWriter for PhantomData<T> {
     type Args<'a> = ();
+    type In = Self;
 
-    fn writer<'a, Writer>(&self) -> impl BinWrite<Writer, Self::Args<'a>>
+    fn writer_mapped<'a, Writer>(this: &Self::In) -> impl BinWrite<Writer, Self::Args<'a>, Self::In>
     where
         Writer: Write + Seek,
     {
-        |_: &mut Writer, _, _| Ok(())
+        (this, |_: &mut Writer, _, _| Ok(()))
     }
 }
 
@@ -50,12 +54,15 @@ macro_rules! impl_bin_write_wrapped {
                 T: BinWriter,
             {
                 type Args<'a> = T::Args<'a>;
+                type In = $type<T::In>;
 
-                fn writer<'a, Writer>(&self) -> impl BinWrite<Writer, Self::Args<'a>>
+                fn writer_mapped<'a, Writer>(this: &Self::In) -> impl BinWrite<Writer, Self::Args<'a>, Self::In>
                 where
                     Writer: Write + Seek,
                 {
-                    |writer: &mut Writer, endian, args| self.deref().writer().write(writer, endian, args)
+                    (this, move |writer: &mut Writer, endian, args| {
+                        T::writer_mapped(this).write(writer, endian, args)
+                    })
                 }
             }
         )*
@@ -72,19 +79,20 @@ macro_rules! impl_bin_write_numeric {
         $(
             impl BinWriter for $type {
                 type Args<'a> = ();
+                type In = Self;
 
-                fn writer<'a, Writer>(&self) -> impl BinWrite<Writer, Self::Args<'a>>
+                fn writer_mapped<'a, Writer>(this: &Self::In) -> impl BinWrite<Writer, Self::Args<'a>, Self::In>
                 where
                     Writer: Write + Seek,
                 {
-                    |writer: &mut Writer, endian, _| {
+                    (this, |writer: &mut Writer, endian, _| {
                         let pos = writer.bin_stream_position()?;
                         let buf = match endian {
-                            Endian::Big => self.to_be_bytes(),
-                            Endian::Little => self.to_le_bytes(),
+                            Endian::Big => this.to_be_bytes(),
+                            Endian::Little => this.to_le_bytes(),
                         };
                         writer.write_all(&buf).map_err(BinError::builder(Some(pos)))
-                    }
+                    })
                 }
             }
         )*
@@ -103,14 +111,15 @@ macro_rules! impl_bin_write_non_zero {
         $(
             impl BinWriter for NonZero<$type> {
                 type Args<'a> = ();
+                type In = Self;
 
-                fn writer<'a, Writer>(&self) -> impl BinWrite<Writer, Self::Args<'a>>
+                fn writer_mapped<'a, Writer>(this: &Self::In) -> impl BinWrite<Writer, Self::Args<'a>, Self::In>
                 where
                     Writer: Write + Seek,
                 {
-                    |writer: &mut Writer, endian, args| {
-                        self.get().writer().write(writer, endian, args)
-                    }
+                    (this, |writer: &mut Writer, endian, args| {
+                        this.get().writer().write(writer, endian, args)
+                    })
                 }
             }
         )*
@@ -125,12 +134,13 @@ impl_bin_write_non_zero!(
 
 impl BinWriter for () {
     type Args<'a> = ();
+    type In = Self;
 
-    fn writer<'a, Writer>(&self) -> impl BinWrite<Writer, Self::Args<'a>>
+    fn writer_mapped<'a, Writer>(this: &Self::In) -> impl BinWrite<Writer, Self::Args<'a>, Self::In>
     where
         Writer: Write + Seek,
     {
-        |_: &mut Writer, _, _| Ok(())
+        (this, |_: &mut Writer, _, _| Ok(()))
     }
 }
 
@@ -144,16 +154,17 @@ macro_rules! impl_bin_write_tuple {
                 #(for<'a> T~I: BinWriter<Args<'a> = T0::Args<'a>>,)*
             {
                 type Args<'a> = T0::Args<'a>;
+                type In = (T0::In, #(T~I::In,)*);
 
-                fn writer<'a, Writer>(&self) -> impl BinWrite<Writer, Self::Args<'a>>
+                fn writer_mapped<'a, Writer>(this: &Self::In) -> impl BinWrite<Writer, Self::Args<'a>, Self::In>
                 where
                     Writer: Write + Seek
                 {
-                    |writer: &mut Writer, endian, args: Self::Args<'a>| {
-                        self.0.writer().write(writer, endian, args.clone())?;
-                        //#(self.~I.writer().write(writer, endian, args.clone())?;)*
+                    (this, |writer: &mut Writer, endian, args: Self::Args<'a>| {
+                        T0::writer_mapped(&this.0).write(writer, endian, args.clone())?;
+                        #(T~I::writer_mapped(&this.I).write(writer, endian, args.clone())?;)*
                         Ok(())
-                    }
+                    })
                 }
             }
         });
@@ -166,12 +177,15 @@ where
     T0: BinWriter,
 {
     type Args<'a> = T0::Args<'a>;
+    type In = (T0::In,);
 
-    fn writer<'a, Writer>(&self) -> impl BinWrite<Writer, Self::Args<'a>>
+    fn writer_mapped<'a, Writer>(this: &Self::In) -> impl BinWrite<Writer, Self::Args<'a>, Self::In>
     where
         Writer: Write + Seek,
     {
-        |writer: &mut Writer, endian, args| self.0.writer().write(writer, endian, args)
+        (this, |writer: &mut Writer, endian, args| {
+            T0::writer_mapped(&this.0).write(writer, endian, args)
+        })
     }
 }
 
@@ -186,16 +200,17 @@ where
     for<'a> T::Args<'a>: Clone,
 {
     type Args<'a> = T::Args<'a>;
+    type In = [T::In; N];
 
-    fn writer<'a, Writer>(&self) -> impl BinWrite<Writer, Self::Args<'a>>
+    fn writer_mapped<'a, Writer>(this: &Self::In) -> impl BinWrite<Writer, Self::Args<'a>, Self::In>
     where
         Writer: Write + Seek,
     {
-        |writer: &mut Writer, endian, args: Self::Args<'a>| {
-            self.iter()
-                .map(|x| x.writer().write(writer, endian, args.clone()))
+        (this, |writer: &mut Writer, endian, args: Self::Args<'a>| {
+            this.iter()
+                .map(|x| T::writer_mapped(x).write(writer, endian, args.clone()))
                 .collect()
-        }
+        })
     }
 }
 
@@ -205,15 +220,16 @@ where
     for<'a> T::Args<'a>: Clone,
 {
     type Args<'a> = T::Args<'a>;
+    type In = Vec<T::In>;
 
-    fn writer<'a, Writer>(&self) -> impl BinWrite<Writer, Self::Args<'a>>
+    fn writer_mapped<'a, Writer>(this: &Self::In) -> impl BinWrite<Writer, Self::Args<'a>, Self::In>
     where
         Writer: Write + Seek,
     {
-        |writer: &mut Writer, endian, args: Self::Args<'a>| {
-            self.iter()
-                .map(|x| x.writer().write(writer, endian, args.clone()))
+        (this, |writer: &mut Writer, endian, args: Self::Args<'a>| {
+            this.iter()
+                .map(|x| T::writer_mapped(x).write(writer, endian, args.clone()))
                 .collect()
-        }
+        })
     }
 }
