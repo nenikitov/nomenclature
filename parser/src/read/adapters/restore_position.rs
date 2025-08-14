@@ -3,17 +3,17 @@ use std::io::{Read, Seek, SeekFrom};
 use crate::prelude::*;
 
 /// Read the value without advancing the stream.
-pub struct RestorePosition<'f, F> {
-    f: &'f mut F,
+pub struct RestorePosition<F> {
+    f: F,
 }
 
-impl<'f, F> RestorePosition<'f, F> {
-    pub(super) fn new(f: &'f mut F) -> Self {
+impl<F> RestorePosition<F> {
+    pub(super) fn new(f: F) -> Self {
         Self { f }
     }
 }
 
-impl<F, Reader, Args, Out> BinRead<Reader, Args, Out> for RestorePosition<'_, F>
+impl<F, Reader, Args, Out> BinRead<Reader, Args, Out> for RestorePosition<F>
 where
     Reader: Read + Seek,
     F: BinRead<Reader, Args, Out>,

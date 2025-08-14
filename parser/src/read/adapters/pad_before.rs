@@ -3,18 +3,18 @@ use std::io::{Read, Seek, SeekFrom};
 use crate::{prelude::*, utils::error::SeekKind};
 
 /// Skip an amount of bytes before a value.
-pub struct PadBefore<'f, F> {
-    f: &'f mut F,
+pub struct PadBefore<F> {
+    f: F,
     padding: usize,
 }
 
-impl<'f, F> PadBefore<'f, F> {
-    pub(super) fn new(f: &'f mut F, padding: usize) -> Self {
+impl<F> PadBefore<F> {
+    pub(super) fn new(f: F, padding: usize) -> Self {
         Self { f, padding }
     }
 }
 
-impl<F, Reader, Args, Out> BinRead<Reader, Args, Out> for PadBefore<'_, F>
+impl<F, Reader, Args, Out> BinRead<Reader, Args, Out> for PadBefore<F>
 where
     Reader: Read + Seek,
     F: BinRead<Reader, Args, Out>,

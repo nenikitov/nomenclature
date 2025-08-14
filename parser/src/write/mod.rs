@@ -1,4 +1,5 @@
 pub mod adapters;
+mod write_new;
 pub(crate) mod impls;
 
 use std::io::{Seek, Write};

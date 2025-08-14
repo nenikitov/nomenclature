@@ -44,11 +44,11 @@ use crate::prelude::*;
 ///     Self: Sized + BinRead<Reader, Args, Out>,
 ///     Reader: Read + Seek,
 /// {
-///     fn parse_3(&mut self) -> impl BinRead<Reader, Args, [Out; 3]>
+///     fn parse_3(mut self) -> impl BinRead<Reader, Args, [Out; 3]>
 ///     where
 ///         Args: Clone, // Needed to repeat parsing multiple times
 ///     {
-///         |reader: &mut Reader, endian: Endian, args: Args| {
+///         move |reader: &mut Reader, endian: Endian, args: Args| {
 ///             let first = self.read(reader, endian, args.clone())?;
 ///             let second = self.read(reader, endian, args.clone())?;
 ///             let third = self.read(reader, endian, args.clone())?;
@@ -82,11 +82,11 @@ use crate::prelude::*;
 /// use std::io::{Cursor, Read, Seek};
 /// use nomenclature::prelude::*;
 ///
-/// pub struct Collect3<'f, F> {
-///     f: &'f mut F,
+/// pub struct Collect3<F> {
+///     f: F,
 /// }
 ///
-/// impl<'f, F, Reader, Args, Out> BinRead<Reader, Args, [Out; 3]> for Collect3<'f, F>
+/// impl<F, Reader, Args, Out> BinRead<Reader, Args, [Out; 3]> for Collect3<F>
 /// where
 ///     Reader: Read + Seek,
 ///     F: BinRead<Reader, Args, Out>,
@@ -112,7 +112,7 @@ use crate::prelude::*;
 ///     Self: Sized + BinRead<Reader, Args, Out>,
 ///     Reader: Read + Seek,
 /// {
-///     fn parse_3(&mut self) -> Collect3<'_, Self>
+///     fn parse_3(self) -> Collect3<Self>
 ///     where
 ///         Args: Clone, // Needed to repeat parsing multiple times
 ///     {
@@ -179,7 +179,7 @@ where
     /// * `assertion`: Function that should return `true` if the parsed value is valid.
     /// * `message`: Function that should return an error message explaining the validation.
     fn assert<AssertFn, MessageFn>(
-        &mut self,
+        self,
         assertion: AssertFn,
         message: MessageFn,
     ) -> impl BinRead<Reader, Args, Out>
@@ -200,7 +200,7 @@ where
     /// # Arguments
     ///
     /// * `map`: Function that is used for conversion.
-    fn map<MapFn, Out2>(&mut self, map: MapFn) -> impl BinRead<Reader, Args, Out2>
+    fn map<MapFn, Out2>(self, map: MapFn) -> impl BinRead<Reader, Args, Out2>
     where
         MapFn: Fn(Out) -> Out2,
     {
@@ -220,7 +220,7 @@ where
     /// # Arguments
     ///
     /// * `padding`: Number of bytes to pad the value with.
-    fn pad_after(&mut self, padding: usize) -> impl BinRead<Reader, Args, Out> {
+    fn pad_after(self, padding: usize) -> impl BinRead<Reader, Args, Out> {
         pad_after::PadAfter::new(self, padding)
     }
 
@@ -238,7 +238,7 @@ where
     /// # Arguments
     ///
     /// * `size`: Length to which the value must be padded to.
-    fn pad_after_to(&mut self, size: usize) -> impl BinRead<Reader, Args, Out> {
+    fn pad_after_to(self, size: usize) -> impl BinRead<Reader, Args, Out> {
         pad_after_to::PadAfterTo::new(self, size)
     }
 
@@ -252,7 +252,7 @@ where
     /// # Arguments
     ///
     /// * `padding`: Number of bytes to pad the value with.
-    fn pad_before(&mut self, padding: usize) -> impl BinRead<Reader, Args, Out> {
+    fn pad_before(self, padding: usize) -> impl BinRead<Reader, Args, Out> {
         pad_before::PadBefore::new(self, padding)
     }
 
@@ -261,7 +261,7 @@ where
     /// # Errors
     ///
     /// - [`BinErrorKind`] when parsing of the inner value fails.
-    fn repeat_array<const N: usize>(&mut self) -> impl BinRead<Reader, Args, [Out; N]>
+    fn repeat_array<const N: usize>(self) -> impl BinRead<Reader, Args, [Out; N]>
     where
         Args: Clone,
     {
@@ -277,7 +277,7 @@ where
     /// # Arguments
     ///
     /// * `len`: Number of values to parse.
-    fn repeat_vec(&mut self, len: usize) -> impl BinRead<Reader, Args, Vec<Out>>
+    fn repeat_vec(self, len: usize) -> impl BinRead<Reader, Args, Vec<Out>>
     where
         Args: Clone,
     {
@@ -292,7 +292,7 @@ where
     /// # Errors
     ///
     /// - [`BinErrorKind`] when parsing of the inner value fails.
-    fn repeat_vec_args_iter<It>(&mut self) -> impl BinRead<Reader, It, Vec<Out>>
+    fn repeat_vec_args_iter<It>(self) -> impl BinRead<Reader, It, Vec<Out>>
     where
         It: IntoIterator<Item = Args>,
     {
@@ -304,7 +304,7 @@ where
     /// # Errors
     ///
     /// - [`BinErrorKind`] when parsing of the inner value fails.
-    fn restore_position(&mut self) -> impl BinRead<Reader, Args, Out> {
+    fn restore_position(self) -> impl BinRead<Reader, Args, Out> {
         restore_position::RestorePosition::new(self)
     }
 
@@ -321,7 +321,7 @@ where
     /// # Arguments
     ///
     /// * `position`: Position to which set the stream.
-    fn seek_before(&mut self, position: usize) -> impl BinRead<Reader, Args, Out> {
+    fn seek_before(self, position: usize) -> impl BinRead<Reader, Args, Out> {
         seek_before::SeekBefore::new(self, position)
     }
 }

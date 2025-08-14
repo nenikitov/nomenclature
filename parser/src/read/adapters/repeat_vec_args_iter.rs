@@ -6,17 +6,17 @@ use crate::prelude::*;
 ///
 /// Changes arguments to be an iterator outputting the arguments for an inner parser.
 /// The produced vector will have the same length as this iterator, so it must be finite.
-pub struct RepeatVecArgsIter<'f, F> {
-    f: &'f mut F,
+pub struct RepeatVecArgsIter<F> {
+    f: F,
 }
 
-impl<'f, F> RepeatVecArgsIter<'f, F> {
-    pub fn new(f: &'f mut F) -> Self {
+impl<F> RepeatVecArgsIter<F> {
+    pub fn new(f: F) -> Self {
         Self { f }
     }
 }
 
-impl<F, Reader, Args, Out, It> BinRead<Reader, It, Vec<Out>> for RepeatVecArgsIter<'_, F>
+impl<F, Reader, Args, Out, It> BinRead<Reader, It, Vec<Out>> for RepeatVecArgsIter<F>
 where
     Reader: Read + Seek,
     F: BinRead<Reader, Args, Out>,
@@ -51,7 +51,7 @@ mod tests {
         // Some padding to check the position of too
         let _ = u32::reader().read(&mut data, Endian::Big, ());
 
-        let mut addition_parser = |reader: &mut Cursor<Vec<u8>>, endian, args: u8| {
+        let addition_parser = |reader: &mut Cursor<Vec<u8>>, endian, args: u8| {
             u8::reader().read(reader, endian, ()).map(|v| v + args)
         };
         let result = addition_parser

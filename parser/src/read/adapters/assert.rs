@@ -6,14 +6,14 @@ use std::{
 use crate::prelude::*;
 
 /// Fail if a specified condition on a parsed value doesn't pass.
-pub struct Assert<'f, F, AssertFn, MessageFn> {
-    f: &'f mut F,
+pub struct Assert<F, AssertFn, MessageFn> {
+    f: F,
     assertion: AssertFn,
     message: MessageFn,
 }
 
-impl<'f, F, AssertFn, MessageFn> Assert<'f, F, AssertFn, MessageFn> {
-    pub(super) fn new(f: &'f mut F, assertion: AssertFn, message: MessageFn) -> Self {
+impl<'f, F, AssertFn, MessageFn> Assert<F, AssertFn, MessageFn> {
+    pub(super) fn new(f: F, assertion: AssertFn, message: MessageFn) -> Self {
         Self {
             f,
             assertion,
@@ -23,7 +23,7 @@ impl<'f, F, AssertFn, MessageFn> Assert<'f, F, AssertFn, MessageFn> {
 }
 
 impl<F, AssertFn, MessageFn, Reader, Args, Out> BinRead<Reader, Args, Out>
-    for Assert<'_, F, AssertFn, MessageFn>
+    for Assert<F, AssertFn, MessageFn>
 where
     Reader: Read + Seek,
     F: BinRead<Reader, Args, Out>,
