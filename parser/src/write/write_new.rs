@@ -38,7 +38,7 @@ trait BinWriter {
     type Args<'a>;
     type In;
 
-    fn writer<'a, Writer>() -> impl BinWrite<Writer, Self::Args<'a>, Self::In>
+    fn writer_mapped<'a, Writer>() -> impl BinWrite<Writer, Self::Args<'a>, Self::In>
     where
         Writer: Write + Seek;
 }
@@ -47,7 +47,7 @@ impl BinWriter for u8 {
     type Args<'a> = ();
     type In = Self;
 
-    fn writer<'a, Writer>() -> impl BinWrite<Writer, Self::Args<'a>, Self::In>
+    fn writer_mapped<'a, Writer>() -> impl BinWrite<Writer, Self::Args<'a>, Self::In>
     where
         Writer: Write + Seek,
     {
@@ -58,13 +58,20 @@ impl BinWriter for u8 {
     }
 }
 
-trait BinWriterStart {
-    fn writer(&self) -> impl PossiblyBinWriteTrait<&Self> {
-        PossiblyBinWrite(self)
+trait BinWriterStart where Self: Sized {
+    fn writer() -> impl PossiblyBinWriteTrait<Self>
+    {
+        PossiblyBinWrite::new()
     }
 }
 
-struct PossiblyBinWrite<T>(T);
+struct PossiblyBinWrite<T>(PhantomData<T>);
+
+impl<T> PossiblyBinWrite<T> {
+    fn new() -> Self {
+        Self(PhantomData)
+    }
+}
 
 trait PossiblyBinWriteTrait<In> {}
 
@@ -76,6 +83,7 @@ where
 {
     fn write<'a, Writer>(
         self,
+        value: &In,
         writer: &mut Writer,
         endian: Endian,
         args: In::Args<'a>,
@@ -84,7 +92,7 @@ where
         In: BinWriter<In = In>,
         Writer: Write + Seek,
     {
-        In::writer().write_non_backtracking(&self, writer, endian, args)
+        In::writer_mapped().write_non_backtracking(value, writer, endian, args)
     }
 
     fn map<In2, MapFn>(self, map: MapFn) -> impl PossiblyBinWriteTrait<In2>
@@ -178,11 +186,12 @@ impl<T> BinWriterStart for T {}
 
 fn test() {
     let mut buf = std::io::Cursor::new(vec![10u8]);
-    _ = 10u8
-        .writer()
-        .map(|v| **v as usize)
+    let a = 10u8;
+    _ = u8::writer()
+        //.map(|v| **v as usize)
+        //.map(|v| *v as u32)
+        //.assert(|a| true)
         .map(|v| *v as u32)
-        .assert(|a| true)
-        .map(|v| *v as u8)
-        .write(&mut buf, Endian::Little, ());
+        .map(|v| *v as u64)
+        .write(&a, &mut buf, Endian::Little, ());
 }
