@@ -41,27 +41,27 @@ use crate::prelude::*;
 /// // Put all your extension methods in a trait
 /// trait MyExtension<Reader, Args, Out>
 /// where
-///     Self: Sized + BinReadCollect<Reader, Args, Out>,
+///     Self: Sized + BinRead<Reader, Args, Out>,
 ///     Reader: Read + Seek,
 /// {
-///     fn parse_3(&mut self) -> impl BinReadCollect<Reader, Args, [Out; 3]>
+///     fn parse_3(mut self) -> impl BinRead<Reader, Args, [Out; 3]>
 ///     where
 ///         Args: Clone, // Needed to repeat parsing multiple times
 ///     {
-///         |reader: &mut Reader, endian: Endian, args: Args| {
-///             let first = self.collect(reader, endian, args.clone())?;
-///             let second = self.collect(reader, endian, args.clone())?;
-///             let third = self.collect(reader, endian, args.clone())?;
+///         move |reader: &mut Reader, endian: Endian, args: Args| {
+///             let first = self.read(reader, endian, args.clone())?;
+///             let second = self.read(reader, endian, args.clone())?;
+///             let third = self.read(reader, endian, args.clone())?;
 ///             Ok([first, second, third])
 ///         }
 ///     }
 /// }
 ///
-/// // Create a blanket implementation for `BinReadCollect`
+/// // Create a blanket implementation for `BinRead`
 /// impl<T, Reader, Args, Out> MyExtension<Reader, Args, Out> for T
 /// where
 ///     Reader: Read + Seek,
-///     T: BinReadCollect<Reader, Args, Out>
+///     T: BinRead<Reader, Args, Out>
 /// {
 /// }
 ///
@@ -70,7 +70,7 @@ use crate::prelude::*;
 /// assert_eq!(
 ///     u8::reader()
 ///        .parse_3()
-///        .collect(&mut data, Endian::Little, ())
+///        .read(&mut data, Endian::Little, ())
 ///        .unwrap(),
 ///     [10, 20, 30]
 /// );
@@ -82,26 +82,26 @@ use crate::prelude::*;
 /// use std::io::{Cursor, Read, Seek};
 /// use nomenclature::prelude::*;
 ///
-/// pub struct Collect3<'f, F> {
-///     f: &'f mut F,
+/// pub struct Collect3<F> {
+///     f: F,
 /// }
 ///
-/// impl<'f, F, Reader, Args, Out> BinReadCollect<Reader, Args, [Out; 3]> for Collect3<'f, F>
+/// impl<F, Reader, Args, Out> BinRead<Reader, Args, [Out; 3]> for Collect3<F>
 /// where
 ///     Reader: Read + Seek,
-///     F: BinReadCollect<Reader, Args, Out>,
+///     F: BinRead<Reader, Args, Out>,
 ///     Args: Clone, // Needed to repeat parsing multiple times
 /// {
-///     fn collect_non_backtracking(
+///     fn read_non_backtracking(
 ///         &mut self,
 ///         reader: &mut Reader,
 ///         endian: Endian,
 ///         args: Args,
-///         _: BinReadCollectToken,
+///         _: BinReadToken,
 ///     ) -> BinResult<[Out; 3]> {
-///         let first = self.f.collect(reader, endian, args.clone())?;
-///         let second = self.f.collect(reader, endian, args.clone())?;
-///         let third = self.f.collect(reader, endian, args.clone())?;
+///         let first = self.f.read(reader, endian, args.clone())?;
+///         let second = self.f.read(reader, endian, args.clone())?;
+///         let third = self.f.read(reader, endian, args.clone())?;
 ///         Ok([first, second, third])
 ///     }
 /// }
@@ -109,10 +109,10 @@ use crate::prelude::*;
 /// // Put all your extension methods in a trait
 /// trait MyExtension<Reader, Args, Out>
 /// where
-///     Self: Sized + BinReadCollect<Reader, Args, Out>,
+///     Self: Sized + BinRead<Reader, Args, Out>,
 ///     Reader: Read + Seek,
 /// {
-///     fn parse_3(&mut self) -> Collect3<'_, Self>
+///     fn parse_3(self) -> Collect3<Self>
 ///     where
 ///         Args: Clone, // Needed to repeat parsing multiple times
 ///     {
@@ -120,11 +120,11 @@ use crate::prelude::*;
 ///     }
 /// }
 ///
-/// // Create a blanket implementation for `BinReadCollect`
+/// // Create a blanket implementation for `BinRead`
 /// impl<T, Reader, Args, Out> MyExtension<Reader, Args, Out> for T
 /// where
 ///     Reader: Read + Seek,
-///     T: BinReadCollect<Reader, Args, Out>,
+///     T: BinRead<Reader, Args, Out>,
 /// {
 /// }
 ///
@@ -133,14 +133,14 @@ use crate::prelude::*;
 /// assert_eq!(
 ///     u8::reader()
 ///         .parse_3()
-///         .collect(&mut data, Endian::Little, ())
+///         .read(&mut data, Endian::Little, ())
 ///         .unwrap(),
 ///     [10, 20, 30]
 /// );
 /// ```
 pub trait BinReadExt<Reader, Args, Out>: sealed::BinReadExt<Reader, Args, Out>
 where
-    Self: Sized + BinReadCollect<Reader, Args, Out>,
+    Self: Sized + BinRead<Reader, Args, Out>,
     Reader: Read + Seek,
 {
     /// Read and construct an `Out` value from the stream, advancing it in the process to after the value.
@@ -156,9 +156,9 @@ where
     /// * `reader`: Stream from which to read.
     /// * `endian`: Target endianness.
     /// * `args`: Arguments required for parsing.
-    fn collect(&mut self, reader: &mut Reader, endian: Endian, args: Args) -> BinResult<Out> {
+    fn read(&mut self, reader: &mut Reader, endian: Endian, args: Args) -> BinResult<Out> {
         let pos = reader.bin_stream_position()?;
-        match self.collect_non_backtracking(reader, endian, args, BinReadCollectToken(())) {
+        match self.read_non_backtracking(reader, endian, args, BinReadToken(())) {
             Err(e) => {
                 reader.bin_seek(SeekFrom::Start(pos), pos)?;
                 Err(e)
@@ -179,16 +179,16 @@ where
     /// * `assertion`: Function that should return `true` if the parsed value is valid.
     /// * `message`: Function that should return an error message explaining the validation.
     fn assert<AssertFn, MessageFn>(
-        &mut self,
+        self,
         assertion: AssertFn,
         message: MessageFn,
-    ) -> impl BinReadCollect<Reader, Args, Out>
+    ) -> impl BinRead<Reader, Args, Out>
     where
         AssertFn: Fn(&Out) -> bool,
         MessageFn: Fn(&Out) -> String,
         Out: Debug,
     {
-        assert::ReadAssert::new(self, assertion, message)
+        assert::Assert::new(self, assertion, message)
     }
 
     /// Map a value being read from one type to another.
@@ -200,11 +200,11 @@ where
     /// # Arguments
     ///
     /// * `map`: Function that is used for conversion.
-    fn map<MapFn, Out2>(&mut self, map: MapFn) -> impl BinReadCollect<Reader, Args, Out2>
+    fn map<MapFn, Out2>(self, map: MapFn) -> impl BinRead<Reader, Args, Out2>
     where
         MapFn: Fn(Out) -> Out2,
     {
-        map::ReadMap::new(self, map)
+        map::Map::new(self, map)
     }
 
     /// Skip an amount of bytes after a value.
@@ -220,8 +220,8 @@ where
     /// # Arguments
     ///
     /// * `padding`: Number of bytes to pad the value with.
-    fn pad_after(&mut self, padding: usize) -> impl BinReadCollect<Reader, Args, Out> {
-        pad_after::ReadPadAfter::new(self, padding)
+    fn pad_after(self, padding: usize) -> impl BinRead<Reader, Args, Out> {
+        pad_after::PadAfter::new(self, padding)
     }
 
     /// Skip some bytes after the value so the stream always advances by a given amount.
@@ -238,8 +238,8 @@ where
     /// # Arguments
     ///
     /// * `size`: Length to which the value must be padded to.
-    fn pad_after_to(&mut self, size: usize) -> impl BinReadCollect<Reader, Args, Out> {
-        pad_after_to::ReadPadAfterTo::new(self, size)
+    fn pad_after_to(self, size: usize) -> impl BinRead<Reader, Args, Out> {
+        pad_after_to::PadAfterTo::new(self, size)
     }
 
     /// Skip an amount of bytes before a value.
@@ -252,8 +252,8 @@ where
     /// # Arguments
     ///
     /// * `padding`: Number of bytes to pad the value with.
-    fn pad_before(&mut self, padding: usize) -> impl BinReadCollect<Reader, Args, Out> {
-        pad_before::ReadPadBefore::new(self, padding)
+    fn pad_before(self, padding: usize) -> impl BinRead<Reader, Args, Out> {
+        pad_before::PadBefore::new(self, padding)
     }
 
     /// Repeat the parser an amount of times, collecting the results into an array.
@@ -261,11 +261,11 @@ where
     /// # Errors
     ///
     /// - [`BinErrorKind`] when parsing of the inner value fails.
-    fn repeat_array<const N: usize>(&mut self) -> impl BinReadCollect<Reader, Args, [Out; N]>
+    fn repeat_array<const N: usize>(self) -> impl BinRead<Reader, Args, [Out; N]>
     where
         Args: Clone,
     {
-        repeat_array::ReadRepeatArray::new(self)
+        repeat_array::RepeatArray::new(self)
     }
 
     /// Repeat the parser an amount of times, collecting the results into a vector.
@@ -277,11 +277,11 @@ where
     /// # Arguments
     ///
     /// * `len`: Number of values to parse.
-    fn repeat_vec(&mut self, len: usize) -> impl BinReadCollect<Reader, Args, Vec<Out>>
+    fn repeat_vec(self, len: usize) -> impl BinRead<Reader, Args, Vec<Out>>
     where
         Args: Clone,
     {
-        repeat_vec::ReadRepeatVec::new(self, len)
+        repeat_vec::RepeatVec::new(self, len)
     }
 
     /// Repeat the parser an amount of times, each time applying different arguments, collecting the results into a vector.
@@ -292,11 +292,11 @@ where
     /// # Errors
     ///
     /// - [`BinErrorKind`] when parsing of the inner value fails.
-    fn repeat_vec_args_iter<It>(&mut self) -> impl BinReadCollect<Reader, It, Vec<Out>>
+    fn repeat_vec_args_iter<It>(self) -> impl BinRead<Reader, It, Vec<Out>>
     where
         It: IntoIterator<Item = Args>,
     {
-        repeat_vec_args_iter::ReadRepeatVecArgsIter::new(self)
+        repeat_vec_args_iter::RepeatVecArgsIter::new(self)
     }
 
     /// Read the value without advancing the stream.
@@ -304,8 +304,8 @@ where
     /// # Errors
     ///
     /// - [`BinErrorKind`] when parsing of the inner value fails.
-    fn restore_position(&mut self) -> impl BinReadCollect<Reader, Args, Out> {
-        restore_position::ReadRestorePosition::new(self)
+    fn restore_position(self) -> impl BinRead<Reader, Args, Out> {
+        restore_position::RestorePosition::new(self)
     }
 
     /// Position the stream before reading the value.
@@ -321,21 +321,21 @@ where
     /// # Arguments
     ///
     /// * `position`: Position to which set the stream.
-    fn seek_before(&mut self, position: usize) -> impl BinReadCollect<Reader, Args, Out> {
-        seek_before::ReadSeekBefore::new(self, position)
+    fn seek_before(self, position: usize) -> impl BinRead<Reader, Args, Out> {
+        seek_before::SeekBefore::new(self, position)
     }
 }
 
 impl<T, Reader, Args, Out> sealed::BinReadExt<Reader, Args, Out> for T
 where
-    T: BinReadCollect<Reader, Args, Out>,
+    T: BinRead<Reader, Args, Out>,
     Reader: Read + Seek,
 {
 }
 
 impl<T, Reader, Args, Out> BinReadExt<Reader, Args, Out> for T
 where
-    T: BinReadCollect<Reader, Args, Out> + sealed::BinReadExt<Reader, Args, Out>,
+    T: BinRead<Reader, Args, Out> + sealed::BinReadExt<Reader, Args, Out>,
     Reader: Read + Seek,
 {
 }
@@ -347,10 +347,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn collect_backtracks_on_error() {
+    fn read_backtracks_on_error() {
         let mut data = Cursor::new(vec![0x00, 0x00, 0x00, 0xA3, 0x66]);
         // Some padding to check the position of the error too
-        let _ = u8::reader().collect(&mut data, Endian::Big, ());
+        let _ = u8::reader().read(&mut data, Endian::Big, ());
 
         let result = (|reader: &mut Cursor<_>, _, _| -> BinResult<()> {
             reader.seek(SeekFrom::Current(2)).unwrap();
@@ -363,7 +363,7 @@ mod tests {
                 },
             ))
         })
-        .collect(&mut data, Endian::Big, ());
+        .read(&mut data, Endian::Big, ());
         assert_eq!(
             result,
             Err(BinError::new(

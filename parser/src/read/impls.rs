@@ -2,23 +2,27 @@ use std::{
     io::{Read, Seek},
     marker::PhantomData,
     num::NonZero,
+    rc::Rc,
+    sync::Arc,
 };
+
+use seq_macro::seq;
 
 use crate::prelude::*;
 
-// BinReadCollect
+// BinRead
 
-impl<F, Reader, Args, Out> BinReadCollect<Reader, Args, Out> for F
+impl<F, Reader, Args, Out> BinRead<Reader, Args, Out> for F
 where
     F: FnMut(&mut Reader, Endian, Args) -> BinResult<Out>,
     Reader: Read + Seek,
 {
-    fn collect_non_backtracking(
+    fn read_non_backtracking(
         &mut self,
         reader: &mut Reader,
         endian: Endian,
         args: Args,
-        _: BinReadCollectToken,
+        _: BinReadToken,
     ) -> BinResult<Out> {
         self(reader, endian, args)
     }
@@ -27,10 +31,10 @@ where
 // BinReader
 
 impl<T> BinReader for PhantomData<T> {
-    type Args = ();
+    type Args<'a> = ();
     type Out = Self;
 
-    fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
+    fn reader<'a, Reader>() -> impl BinRead<Reader, Self::Args<'a>, Self::Out>
     where
         Reader: Read + Seek,
     {
@@ -38,22 +42,22 @@ impl<T> BinReader for PhantomData<T> {
     }
 }
 
-macro_rules! impl_binread_wrapped {
+macro_rules! impl_bin_read_wrapped {
     ($($type:ident),* $(,)*) => {
         $(
-            impl<T> BinReader for $type::<T>
+            impl<T> BinReader for $type<T>
             where
-                T: BinReader<Out = T>,
+                T: BinReader,
             {
-                type Args = T::Args;
-                type Out = Self;
+                type Args<'a> = T::Args<'a>;
+                type Out = $type<T::Out>;
 
-                fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
+                fn reader<'a, Reader>() -> impl BinRead<Reader, Self::Args<'a>, Self::Out>
                 where
                     Reader: Read + Seek,
                 {
                     |reader: &mut Reader, endian, args| {
-                        T::reader().map(Self::new).collect(reader, endian, args)
+                        T::reader().map($type::new).read(reader, endian, args)
                     }
                 }
             }
@@ -62,28 +66,28 @@ macro_rules! impl_binread_wrapped {
 }
 
 #[rustfmt::skip]
-impl_binread_wrapped!(
-    Box,
+impl_bin_read_wrapped!(
+    Box, Rc, Arc
 );
 
-macro_rules! impl_binread_numeric {
+macro_rules! impl_bin_read_numeric {
     ($($type:ty),* $(,)*) => {
         $(
             impl BinReader for $type {
-                type Args = ();
+                type Args<'a> = ();
                 type Out = Self;
 
-                fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
+                fn reader<'a, Reader>() -> impl BinRead<Reader, Self::Args<'a>, Self::Out>
                 where
                     Reader: Read + Seek,
                 {
                     |reader: &mut Reader, endian, _| {
                         let pos = reader.bin_stream_position()?;
-                        let mut buf = [0; size_of::<$type>()];
+                        let mut buf = [0; size_of::<Self>()];
                         reader.read_exact(&mut buf).map_err(BinError::builder(Some(pos)))?;
                         Ok(match endian {
-                            Endian::Big => <$type>::from_be_bytes(buf),
-                            Endian::Little => <$type>::from_le_bytes(buf),
+                            Endian::Big => Self::from_be_bytes(buf),
+                            Endian::Little => Self::from_le_bytes(buf),
                         })
                     }
                 }
@@ -93,19 +97,20 @@ macro_rules! impl_binread_numeric {
 }
 
 #[rustfmt::skip]
-impl_binread_numeric!(
+impl_bin_read_numeric!(
     u8, u16, u32, u64, u128,
     i8, i16, i32, i64, i128,
     f32, f64,
 );
 
-macro_rules! impl_binread_non_zero {
+macro_rules! impl_bin_read_non_zero {
     ($($type:ty),* $(,)*) => {
         $(
             impl BinReader for NonZero<$type> {
-                type Args = ();
+                type Args<'a> = ();
                 type Out = Self;
-                fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
+
+                fn reader<'a, Reader>() -> impl BinRead<Reader, Self::Args<'a>, Self::Out>
                 where
                     Reader: Read + Seek,
                 {
@@ -116,10 +121,9 @@ macro_rules! impl_binread_non_zero {
                                 |_| "non-zero value expected, but read a 0".to_string(),
                             )
                             .map(|v| {
-                                NonZero::<$type>::new(v)
-                                    .expect("we already checked for a non-zero value")
+                                Self::new(v).expect("we already checked for a non-zero value")
                             })
-                            .collect(reader, endian, args)
+                            .read(reader, endian, args)
                     }
                 }
             }
@@ -128,16 +132,16 @@ macro_rules! impl_binread_non_zero {
 }
 
 #[rustfmt::skip]
-impl_binread_non_zero!(
+impl_bin_read_non_zero!(
     u8, u16, u32, u64, u128,
     i8, i16, i32, i64, i128,
 );
 
 impl BinReader for () {
-    type Args = ();
+    type Args<'a> = ();
     type Out = Self;
 
-    fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
+    fn reader<'a, Reader>() -> impl BinRead<Reader, Self::Args<'a>, Self::Out>
     where
         Reader: Read + Seek,
     {
@@ -145,46 +149,68 @@ impl BinReader for () {
     }
 }
 
-fortuples::fortuples! {
-    #[tuples::min_size(1)]
-    #[tuples::max_size(12)]
-    #[tuples::member_name(T)]
-    impl<Args> BinReader for #Tuple
-    where
-        Args: Clone,
-        #(#T: BinReader<Args = Args, Out = #T>),*
-    {
-        type Args = Args;
-        type Out = Self;
+macro_rules! impl_bin_read_tuple {
+    ($length:literal) => {
+        seq!(I in 1..$length {
+            impl<T0, #(T~I,)*> BinReader for (T0, #(T~I,)*)
+            where
+                T0: BinReader,
+                for<'a> T0::Args<'a>: Clone,
+                #(for<'a> T~I: BinReader<Args<'a> = T0::Args<'a>>,)*
+            {
+                type Args<'a> = T0::Args<'a>;
+                type Out = (T0::Out, #(T~I::Out,)*);
 
-        fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
-        where
-            Reader: Read + Seek,
-        {
-            |reader: &mut Reader, endian, args: Self::Args| {
-                #(let #T = #T::reader().collect(reader, endian, args.clone())?;)*
-                Ok(#Tuple)
+                fn reader<'a, Reader>() -> impl BinRead<Reader, Self::Args<'a>, Self::Out>
+                where
+                    Reader: Read + Seek,
+                {
+                    |reader: &mut Reader, endian, args: Self::Args<'a>| {
+                        let t0 = T0::reader().read(reader, endian, args.clone())?;
+                        #(let t~I = T~I::reader().read(reader, endian, args.clone())?;)*
+                        Ok((t0, #(t~I,)*))
+                    }
+                }
             }
-        }
+        });
     }
 }
 
+// We don't need `Args` to be `Clone` if the tuple is the length of 1, so the manual implementation is more generic
+impl<T0> BinReader for (T0,)
+where
+    T0: BinReader,
+{
+    type Args<'a> = T0::Args<'a>;
+    type Out = (T0::Out,);
+
+    fn reader<'a, Reader>() -> impl BinRead<Reader, Self::Args<'a>, Self::Out>
+    where
+        Reader: Read + Seek,
+    {
+        |reader: &mut Reader, endian, args| T0::reader().map(|x| (x,)).read(reader, endian, args)
+    }
+}
+
+#[rustfmt::skip]
+seq!(LENGTH in 2..=12 {
+    impl_bin_read_tuple!(LENGTH);
+});
+
 impl<T, const N: usize> BinReader for [T; N]
 where
-    T: BinReader<Out = T>,
-    T::Args: Clone,
+    T: BinReader,
+    for<'a> T::Args<'a>: Clone,
 {
-    type Args = T::Args;
-    type Out = Self;
+    type Args<'a> = T::Args<'a>;
+    type Out = [T::Out; N];
 
-    fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
+    fn reader<'a, Reader>() -> impl BinRead<Reader, Self::Args<'a>, Self::Out>
     where
         Reader: Read + Seek,
     {
         |reader: &mut Reader, endian, args| {
-            T::reader()
-                .repeat_array::<N>()
-                .collect(reader, endian, args)
+            T::reader().repeat_array::<N>().read(reader, endian, args)
         }
     }
 }
@@ -197,20 +223,20 @@ pub struct VecArgs<InnerArgs> {
 
 impl<T> BinReader for Vec<T>
 where
-    T: BinReader<Out = T>,
-    T::Args: Clone,
+    T: BinReader,
+    for<'a> T::Args<'a>: Clone,
 {
-    type Args = VecArgs<T::Args>;
-    type Out = Self;
+    type Args<'a> = VecArgs<T::Args<'a>>;
+    type Out = Vec<T::Out>;
 
-    fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
+    fn reader<'a, Reader>() -> impl BinRead<Reader, Self::Args<'a>, Self::Out>
     where
         Reader: Read + Seek,
     {
-        |reader: &mut Reader, endian, args: Self::Args| {
+        |reader: &mut Reader, endian, args: Self::Args<'a>| {
             T::reader()
                 .repeat_vec(args.len)
-                .collect(reader, endian, args.inner_args.clone())
+                .read(reader, endian, args.inner_args.clone())
         }
     }
 }

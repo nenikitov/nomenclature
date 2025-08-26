@@ -12,40 +12,39 @@ use crate::prelude::*;
 /// When writing, [`Marker::pos`] will be populated and [`Default::default`] as a placeholder will be written.
 // TODO(nenikitov): add this line - You can later write to it by using [`BinReaderExt::mark_metadata`], [`BinReaderExt::mark_position`], or [`BinReaderExt::mark_size`].
 #[derive(Debug, Default, PartialEq, Eq)]
-pub struct Marker<M> {
+pub struct Marker<T> {
     pos: Cell<u64>,
-    value: M,
+    value: T,
 }
 
-impl<M> Marker<M> {
+impl<T> Marker<T> {
     /// Position of the [`Marker::value`] in the stream.
     pub fn pos(&self) -> u64 {
         self.pos.get()
     }
 
     /// Underlying value.
-    pub fn value(&self) -> &M {
+    pub fn value(&self) -> &T {
         &self.value
     }
 }
 
-impl<M> BinReader for Marker<M>
+impl<T> BinReader for Marker<T>
 where
-    M: BinReader<Out = M>,
+    T: BinReader,
 {
-    type Args = M::Args;
+    type Args<'a> = T::Args<'a>;
+    type Out = Marker<T::Out>;
 
-    type Out = Self;
-
-    fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
+    fn reader<'a, Reader>() -> impl BinRead<Reader, Self::Args<'a>, Self::Out>
     where
         Reader: Read + Seek,
     {
         |reader: &mut Reader, endian, args| {
             let pos = reader.bin_stream_position()?;
-            let value = M::reader().collect(reader, endian, args)?;
+            let value = T::reader().read(reader, endian, args)?;
 
-            Ok(Self {
+            Ok(Marker {
                 pos: Cell::new(pos),
                 value,
             })
@@ -65,7 +64,7 @@ mod tests {
     fn stores_value_when_read() {
         let mut data = Cursor::new(vec![0xCE, 0x55]);
 
-        let result = <Marker<u16>>::reader().collect(&mut data, Endian::Big, ());
+        let result = <Marker<u16>>::reader().read(&mut data, Endian::Big, ());
         assert_matches!(
             result,
             Ok(Marker {
@@ -79,9 +78,9 @@ mod tests {
     fn stores_position_when_read() {
         let mut data = Cursor::new(vec![0x00, 0x00, 0xCF, 0x25]);
         // Some padding to check the position of too
-        let _ = u16::reader().collect(&mut data, Endian::Big, ());
+        let _ = u16::reader().read(&mut data, Endian::Big, ());
 
-        let result = <Marker<u16>>::reader().collect(&mut data, Endian::Big, ());
+        let result = <Marker<u16>>::reader().read(&mut data, Endian::Big, ());
         assert_eq!(
             result,
             Ok(Marker {

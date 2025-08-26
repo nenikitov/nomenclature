@@ -6,31 +6,31 @@ use crate::prelude::*;
 ///
 /// Changes arguments to be an iterator outputting the arguments for an inner parser.
 /// The produced vector will have the same length as this iterator, so it must be finite.
-pub struct ReadRepeatVecArgsIter<'f, F> {
-    f: &'f mut F,
+pub struct RepeatVecArgsIter<F> {
+    f: F,
 }
 
-impl<'f, F> ReadRepeatVecArgsIter<'f, F> {
-    pub fn new(f: &'f mut F) -> Self {
+impl<F> RepeatVecArgsIter<F> {
+    pub fn new(f: F) -> Self {
         Self { f }
     }
 }
 
-impl<F, Reader, Args, Out, It> BinReadCollect<Reader, It, Vec<Out>> for ReadRepeatVecArgsIter<'_, F>
+impl<F, Reader, Args, Out, It> BinRead<Reader, It, Vec<Out>> for RepeatVecArgsIter<F>
 where
     Reader: Read + Seek,
-    F: BinReadCollect<Reader, Args, Out>,
+    F: BinRead<Reader, Args, Out>,
     It: IntoIterator<Item = Args>,
 {
-    fn collect_non_backtracking(
+    fn read_non_backtracking(
         &mut self,
         reader: &mut Reader,
         endian: Endian,
         args: It,
-        _: BinReadCollectToken,
+        _: BinReadToken,
     ) -> BinResult<Vec<Out>> {
         args.into_iter()
-            .map(|args| self.f.collect(reader, endian, args))
+            .map(|args| self.f.read(reader, endian, args))
             .collect()
     }
 }
@@ -49,14 +49,14 @@ mod tests {
             0x00, 0x00, 0x00, 0x00, 0xD5, 0xA0, 0xBA, 0x12, 0x2D, 0x95, 0x1B, 0x79, 0x6C, 0x5B,
         ]);
         // Some padding to check the position of too
-        let _ = u32::reader().collect(&mut data, Endian::Big, ());
+        let _ = u32::reader().read(&mut data, Endian::Big, ());
 
-        let mut addition_parser = |reader: &mut Cursor<Vec<u8>>, endian, args: u8| {
-            u8::reader().collect(reader, endian, ()).map(|v| v + args)
+        let addition_parser = |reader: &mut Cursor<Vec<u8>>, endian, args: u8| {
+            u8::reader().read(reader, endian, ()).map(|v| v + args)
         };
         let result = addition_parser
             .repeat_vec_args_iter()
-            .collect(&mut data, Endian::Big, 0..10);
+            .read(&mut data, Endian::Big, 0..10);
         assert_matches!(
             result,
             Ok(inner)

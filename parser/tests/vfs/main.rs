@@ -11,36 +11,37 @@ struct VfsFile {
 }
 
 impl BinReader for VfsFile {
-    type Args = ();
+    type Args<'a> = ();
     type Out = Self;
 
-    fn reader<Reader>() -> impl BinReadCollect<Reader, Self::Args, Self::Out>
+    fn reader<'a, Reader>() -> impl BinRead<Reader, Self::Args<'a>, Self::Out>
     where
         Reader: Read + Seek,
     {
         |reader: &mut Reader, endian, _| {
             let _ = <[u8; 4]>::reader()
                 .assert(|v| v == b"VFS\0", |v| format!("Bad magic {v:?}"))
-                .collect(reader, endian, ())?;
+                .read(reader, endian, ())?;
 
             let message = NullStringAscii::reader()
                 .pad_after_to(24)
-                .collect(reader, endian, ())?;
+                .read(reader, endian, ())?;
 
-            let entries = u32::reader().collect(reader, endian, ())?;
+            let entries = u32::reader().read(reader, endian, ())?;
 
-            let offsets = <(u32, u32)>::reader()
-                .repeat_vec(entries as usize)
-                .collect(reader, endian, ())?;
+            let offsets =
+                <(u32, u32)>::reader()
+                    .repeat_vec(entries as usize)
+                    .read(reader, endian, ())?;
 
             let files = (|reader: &mut Reader, endian, &(offset, len)| {
                 u8::reader()
                     .repeat_vec(len as usize)
                     .seek_before(offset as usize)
-                    .collect(reader, endian, ())
+                    .read(reader, endian, ())
             })
             .repeat_vec_args_iter()
-            .collect(reader, endian, &offsets)?;
+            .read(reader, endian, &offsets)?;
 
             Ok(Self { message, files })
         }
@@ -50,7 +51,7 @@ impl BinReader for VfsFile {
 #[test]
 fn main() {
     let mut data = Cursor::new(DATA);
-    let result = VfsFile::reader().collect(&mut data, Endian::Little, ());
+    let result = VfsFile::reader().read(&mut data, Endian::Little, ());
 
     assert_eq!(
         result,

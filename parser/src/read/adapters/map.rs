@@ -6,15 +6,15 @@ use std::{
 use crate::prelude::*;
 
 /// Map a value being read from one type to another.
-pub struct ReadMap<'f, F, MapFn, _Out> {
-    f: &'f mut F,
+pub struct Map<F, MapFn, _Out> {
+    f: F,
     map: MapFn,
     // HACK: I get unconstraint generic types in the `impl` without it
     _out: PhantomData<_Out>,
 }
 
-impl<'f, F, MapFn, _Out> ReadMap<'f, F, MapFn, _Out> {
-    pub(super) fn new(f: &'f mut F, map: MapFn) -> Self {
+impl<F, MapFn, _Out> Map<F, MapFn, _Out> {
+    pub(super) fn new(f: F, map: MapFn) -> Self {
         Self {
             f,
             map,
@@ -23,21 +23,20 @@ impl<'f, F, MapFn, _Out> ReadMap<'f, F, MapFn, _Out> {
     }
 }
 
-impl<F, MapFn, Reader, Args, Out, Out2> BinReadCollect<Reader, Args, Out2>
-    for ReadMap<'_, F, MapFn, Out>
+impl<F, MapFn, Reader, Args, Out, Out2> BinRead<Reader, Args, Out2> for Map<F, MapFn, Out>
 where
     Reader: Read + Seek,
-    F: BinReadCollect<Reader, Args, Out>,
+    F: BinRead<Reader, Args, Out>,
     MapFn: Fn(Out) -> Out2,
 {
-    fn collect_non_backtracking(
+    fn read_non_backtracking(
         &mut self,
         reader: &mut Reader,
         endian: Endian,
         args: Args,
-        _: BinReadCollectToken,
+        _: BinReadToken,
     ) -> BinResult<Out2> {
-        self.f.collect(reader, endian, args).map(&self.map)
+        self.f.read(reader, endian, args).map(&self.map)
     }
 }
 
@@ -53,7 +52,7 @@ mod tests {
 
         let result = u8::reader()
             .map(|v| v + 20)
-            .collect(&mut data, Endian::Big, ());
+            .read(&mut data, Endian::Big, ());
         assert_eq!(result, Ok(50));
     }
 
@@ -64,7 +63,7 @@ mod tests {
         let result = u8::reader()
             .map(|v| v + 2)
             .map(|v| v * 2)
-            .collect(&mut data, Endian::Big, ());
+            .read(&mut data, Endian::Big, ());
         assert_eq!(result, Ok(8));
     }
 }
