@@ -14,4 +14,4 @@ fixed = "1.29.0"
 # TODO(nenikitov): Replace with builtins `std::array::try_from_fn` when `array_try_from_fn` gets stabilized
 array-init = "2.1.0"
 fortuples = "0.9.1"
-widestring = "1.2.0"
+widestring = "1.2.1"
