@@ -58,7 +58,7 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
           components: clippy
       - name: cargo clippy
-        uses: clechasseur/rs-clippy-check@ff884e6d84447e8bb55fa0a6510e058e0c40be19
+        uses: clechasseur/rs-clippy-check@286fd9545eb133adad54b4af34bcb642e266ddd1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           toolchain: ${{ matrix.toolchain }}
