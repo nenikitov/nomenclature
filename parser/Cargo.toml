@@ -7,7 +7,7 @@ edition = "2024"
 # TODO(nenikitov): Replace with builtins `std::assert_matches` when `assert_matches` gets stabilized
 assert_matches = "1.5.0"
 # Integration tests
-glam = "0.30.5"
+glam = "0.30.10"
 fixed = "1.29.0"
 
 [dependencies]
