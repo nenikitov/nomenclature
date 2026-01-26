@@ -63,9 +63,9 @@ dependencies = [
 
 [[package]]
 name = "glam"
-version = "0.30.5"
+version = "0.31.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2d1aab06663bdce00d6ca5e5ed586ec8d18033a771906c993a1e3755b368d85"
+checksum = "74a4d85559e2637d3d839438b5b3d75c31e655276f9544d72475c36b92fabbed"
 
 [[package]]
 name = "half"
